@@ -228,12 +228,12 @@
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
           <a href="#" onclick="goTo('hp')" class="glass p-3 text-center hover:shadow-card">
-            <i class="fa-solid fa-mobile-screen-button text-brand text-xl"></i>
-            <div class="mt-1 font-medium">Aplikasi HP</div>
+            <i id="opt1Icon" class="fa-solid fa-mobile-screen-button text-brand text-xl"></i>
+            <div id="opt1Text" class="mt-1 font-medium">Aplikasi HP</div>
           </a>
           <a href="#" onclick="goTo('reguler')" class="glass p-3 text-center hover:shadow-card">
-            <i class="fa-solid fa-shirt text-brand text-xl"></i>
-            <div class="mt-1 font-medium">Aplikasi Seragam</div>
+            <i id="opt2Icon" class="fa-solid fa-shirt text-brand text-xl"></i>
+            <div id="opt2Text" class="mt-1 font-medium">Aplikasi Seragam</div>
           </a>
         </div>
         <button class="mt-4 w-full rounded-lg border border-slate-300 py-2.5 text-slate-700 hover:bg-white/60" onclick="logout()">
@@ -371,11 +371,26 @@
     // ====== AFTER LOGIN ======
     function showAfterLogin(u){
       document.querySelector('.grid[role="tablist"]').classList.add('hidden');
-      $('viewsWrap').classList.add('hidden');        // <— hilangkan ruang kosong
+      $('viewsWrap').classList.add('hidden');        // hilangkan ruang kosong
       $('afterLogin').classList.remove('hidden');    // tampilkan pilihan
+
       $('who').textContent = u;
       IS_ADMIN = String(u||'').toLowerCase()==='adminksn';
+
+      // === label & ikon dinamis ===
+      if(IS_ADMIN){
+        $('opt1Text').textContent = 'Aplikasi HP';
+        $('opt2Text').textContent = 'Aplikasi Seragam';
+        $('opt1Icon').className = 'fa-solid fa-mobile-screen-button text-brand text-xl';
+        $('opt2Icon').className = 'fa-solid fa-shirt text-brand text-xl';
+      }else{
+        $('opt1Text').textContent = 'Pengajuan Elektronik';
+        $('opt2Text').textContent = 'Pengajuan Reguler';
+        $('opt1Icon').className = 'fa-solid fa-plug text-brand text-xl';
+        $('opt2Icon').className = 'fa-solid fa-file-pen text-brand text-xl';
+      }
     }
+
     function goTo(kind){
       const u = sessionStorage.getItem('username') || '';
       const qs = new URLSearchParams({ user: u }).toString();
@@ -383,6 +398,7 @@
         if(kind==='hp') location.href = `aplikasi_hp.html?${qs}`;
         else location.href = `aplikasi_seragam.html?${qs}`;
       }else{
+        // non-admin: "Pengajuan Elektronik" (hp) & "Pengajuan Reguler"
         if(kind==='hp') location.href = `pengajuanhp.html?${qs}`;
         else location.href = `reguler.html?${qs}`;
       }
