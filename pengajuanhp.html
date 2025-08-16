@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Riwayat Pengajuan HP – KSN</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { gold: { 500: '#d4af37', 600: '#b8941f' } },
+          fontFamily: { poppins: ['Poppins', 'sans-serif'] },
+          boxShadow: {
+            soft: '0 12px 30px rgba(0,0,0,.08)'
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Poppins', sans-serif; background: radial-gradient(1200px 600px at 100% 0%, rgba(212,175,55,.08), transparent 60%) , linear-gradient(135deg,#fff,#fffef6); }
+    .badge { padding:.25rem .5rem; border-radius:9999px; font-size:.75rem; font-weight:600; border:1px solid rgba(0,0,0,.12); }
+    .masa-cicilan-active { color:#f59e0b; font-weight:600; }
+    .masa-cicilan-complete { color:#10b981; font-weight:600; }
+    .whatsapp-link { color:#25D366; text-decoration:none; }
+    .whatsapp-link:hover { text-decoration:underline; }
+    .sortable { cursor: pointer; }
+    .skeleton { position: relative; overflow: hidden; background: #eef2f7; }
+    .skeleton::after { content:""; position:absolute; inset:0; transform: translateX(-100%); background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.5), rgba(255,255,255,0)); animation: shimmer 1.2s infinite; }
+    @keyframes shimmer { 100% { transform: translateX(100%); } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <!-- Loading (overlay) -->
+  <div id="loading" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 shadow-xl text-center">
+      <div class="w-12 h-12 border-4 border-slate-200 border-t-gold-500 rounded-full animate-spin mx-auto mb-3"></div>
+      <div class="text-sm text-slate-600">Memuat data…</div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 hidden px-4 py-2 rounded-lg bg-slate-900 text-white text-sm shadow-lg"></div>
+
+  <!-- Header -->
+  <header class="bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 shadow-sm sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gold-500 text-white">📱</span>
+        <h1 class="text-lg md:text-2xl font-semibold">Riwayat Pengajuan HP</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="loggedAs" class="text-xs md:text-sm text-slate-500 hidden"></span>
+        <a href="index.html" class="px-3 py-1.5 rounded-lg bg-gold-500 hover:bg-gold-600 text-white text-sm">🏠 Menu Utama</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    <!-- Controls -->
+    <section class="bg-white rounded-2xl shadow p-4 md:p-6 mb-4">
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+        <div>
+          <div class="text-sm text-slate-600">Menampilkan data untuk NPK (username): <b id="npkLabel">-</b></div>
+          <p id="infoNote" class="text-xs text-slate-500">Data ditarik otomatis berdasarkan sesi login</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative">
+            <input id="searchInput" type="text" placeholder="Cari nama / tipe HP / instalasi…" class="w-56 md:w-72 rounded-lg border-slate-200 focus:border-gold-500 focus:ring-gold-500 text-sm" />
+            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400">🔎</span>
+          </div>
+          <select id="statusFilter" class="rounded-lg border-slate-200 focus:border-gold-500 focus:ring-gold-500 text-sm">
+            <option value="">Semua Status</option>
+            <option>OK</option>
+            <option>VERIFIKASI</option>
+            <option>NO ACC</option>
+          </select>
+          <select id="perPage" class="rounded-lg border-slate-200 focus:border-gold-500 focus:ring-gold-500 text-sm">
+            <option value="10">10 / halaman</option>
+            <option value="20">20 / halaman</option>
+            <option value="50">50 / halaman</option>
+            <option value="9999">Semua</option>
+          </select>
+          <button id="refreshBtn" class="px-3 py-2 rounded-lg border text-sm hover:bg-slate-50">🔄 Refresh</button>
+          <button id="csvBtn" class="px-3 py-2 rounded-lg bg-slate-900 text-white text-sm hover:bg-slate-800">⬇️ Export CSV</button>
+          <button id="printBtn" class="px-3 py-2 rounded-lg border text-sm hover:bg-slate-50">🖨️ Cetak</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Table -->
+    <section class="bg-white rounded-2xl shadow p-0 overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b">
+        <div id="countRows" class="text-sm text-slate-500">-</div>
+        <div class="text-xs text-slate-400">Klik header bertanda ⬍ untuk urutkan</div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full" id="tblData">
+          <thead class="bg-slate-100 text-slate-700 text-sm">
+            <tr>
+              <th class="px-3 py-2 text-left">#</th>
+              <th class="px-3 py-2 text-left sortable" id="sortNo">No ⬍</th>
+              <th class="px-3 py-2 text-left sortable" id="sortTanggal">Tanggal ⬍</th>
+              <th class="px-3 py-2 text-left">NPK</th>
+              <th class="px-3 py-2 text-left">Nama</th>
+              <th class="px-3 py-2 text-left">No. Telp</th>
+              <th class="px-3 py-2 text-left">Instalasi</th>
+              <th class="px-3 py-2 text-left">Cicilan</th>
+              <th class="px-3 py-2 text-left">Tipe HP</th>
+              <th class="px-3 py-2 text-left">Alamat Kirim</th>
+              <th class="px-3 py-2 text-left">Keterangan</th>
+              <th class="px-3 py-2 text-left sortable" id="sortStatus">Status ⬍</th>
+              <th class="px-3 py-2 text-left">Masa Cicilan</th>
+            </tr>
+          </thead>
+          <tbody id="tbody" class="divide-y"></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between px-4 py-3 border-t bg-slate-50">
+        <div id="pageInfo" class="text-sm text-slate-500">-</div>
+        <div class="flex items-center gap-2">
+          <button id="prevBtn" class="px-3 py-1.5 rounded border text-sm">Sebelumnya</button>
+          <button id="nextBtn" class="px-3 py-1.5 rounded border text-sm">Berikutnya</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxHylq0kuwja-7FQgHwYas-bh9GUUKChEPZ6stylR37gBWtqyFDKe7OsZCov2aoUmPi/exec';
+    let currentData = [];
+    let viewData = []; // hasil filter/search
+    let sortAsc = true; // default naik untuk No
+    let sortKey = 'id';
+    let page = 1;
+    let perPage = 10;
+
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => document.querySelectorAll(sel);
+    const showLoading = (b) => { const el = $('#loading'); b ? (el.style.display='flex') : (el.style.display='none'); };
+    const toast = (msg, ok=true) => { const t = $('#toast'); t.textContent = msg; t.className = "fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-sm shadow-lg " + (ok ? "bg-gold-500 text-white" : "bg-rose-600 text-white"); t.style.opacity = 1; t.style.display = 'block'; setTimeout(()=>{ t.style.opacity = 0; setTimeout(()=>t.style.display='none', 300) }, 2200); };
+    const esc = (s) => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+    function getParam(name){ const u = new URLSearchParams(window.location.search); return u.get(name) || ''; }
+
+    function getLoggedUsername(){ const fromParam = getParam('user')?.trim(); if (fromParam) return fromParam; try { const ss = sessionStorage.getItem('username'); if (ss) return ss.trim(); } catch(_) {} return ''; }
+
+    function fmtDDMMYYYY(d){ const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); return `${dd}/${mm}/${yy}`; }
+    function parseDate(val){ if(!val) return null; if(typeof val==='string' && val.includes('/')){ const [d,m,y]=val.split('/').map(x=>parseInt(x,10)); if(!isNaN(d)&&!isNaN(m)&&!isNaN(y)) return new Date(y, m-1, d); } const t=new Date(val); return isNaN(t)? null : t; }
+    function formatDateToDDMMYYYY(val){ const d=parseDate(val); return d? fmtDDMMYYYY(d):''; }
+
+    function buildWaLink(telp){ const clean=(telp||'').replace(/[^\d]/g,''); if(!clean) return ''; const withCc = clean.startsWith('0')? '62'+clean.slice(1) : (clean.startsWith('62')? clean : '62'+clean); return `https://wa.me/${withCc}`; }
+
+    function applyFilters(){
+      const q = ($('#searchInput').value || '').toLowerCase();
+      const st = ($('#statusFilter').value || '').toUpperCase();
+      viewData = (currentData||[]).filter(r=>{
+        const text = [r.nama, r.tipehp, r.instalasi, r.alamat, r.keterangan, r.npk].map(x=>String(x||'').toLowerCase()).join(' ');
+        const okSearch = !q || text.includes(q);
+        const okStatus = !st || String(r.status||'').toUpperCase() === st;
+        return okSearch && okStatus;
+      });
+      sortAndRender();
+    }
+
+    function sortAndRender(){
+      const dir = sortAsc ? 1 : -1;
+      viewData.sort((a,b)=>{
+        if (sortKey === 'id') {
+          const na = Number(a.id)||0, nb=Number(b.id)||0; return (na-nb)*dir;
+        } else if (sortKey === 'tanggal') {
+          const da = parseDate(a.tanggal)?.getTime()||0; const db = parseDate(b.tanggal)?.getTime()||0; return (da-db)*dir;
+        } else if (sortKey === 'status') {
+          const sa = String(a.status||''); const sb = String(b.status||''); return sa.localeCompare(sb)*dir;
+        }
+        return 0;
+      });
+      renderTable(paginate(viewData, page, perPage));
+      updatePager();
+    }
+
+    function paginate(arr, p, n){ const total=arr.length; const maxPage = Math.max(1, Math.ceil(total / n)); if (p>maxPage) page=maxPage; const start=(page-1)*n; return arr.slice(start, start+n); }
+
+    function renderSkeleton(rows=5){ const tb = $('#tbody'); tb.innerHTML=''; for(let i=0;i<rows;i++){ const tr=document.createElement('tr'); tr.innerHTML=`
+        <td class='px-3 py-3'><div class='h-4 w-6 rounded skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-4 w-16 rounded skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-4 w-20 rounded skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-4 w-16 rounded skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-4 w-28 rounded skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-4 w-24 rounded skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-4 w-24 rounded skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-4 w-16 rounded skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-4 w-28 rounded skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-4 w-40 rounded skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-4 w-28 rounded skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-5 w-16 rounded-full skeleton'></div></td>
+        <td class='px-3 py-3'><div class='h-4 w-28 rounded skeleton'></div></td>`; tb.appendChild(tr);} }
+
+    function renderTable(rows){
+      const tb = $('#tbody'); tb.innerHTML = '';
+      $('#countRows').textContent = `${viewData.length} baris total`;
+
+      if(!rows.length){
+        tb.innerHTML = `<tr><td colspan="13" class="px-3 py-10 text-center">
+          <div class="text-slate-500">Tidak ada data yang cocok</div>
+          <div class="text-xs text-slate-400">Coba ubah kata kunci atau filter.</div>
+        </td></tr>`;
+        return;
+      }
+
+      rows.forEach((r, i)=>{
+        let tel = String(r.notelp||'');
+        let link = r.notelp_link || buildWaLink(tel);
+        let telHtml = esc(tel);
+        if (link) { telHtml = `<a href="${esc(link)}" target="_blank" rel="noopener" class="whatsapp-link">${esc(tel)} 📲</a>`; }
+
+        let masaHtml = esc(r.masaCicilan || '');
+        if (r.masaCicilan) {
+          const low = String(r.masaCicilan).toLowerCase();
+          if (low.includes('lunas') || low.includes('selesai')) { masaHtml = `<span class="masa-cicilan-complete">${esc(r.masaCicilan)}</span>`; }
+          else if (low.includes('sisa') || low.includes('masih')) { masaHtml = `<span class="masa-cicilan-active">${esc(r.masaCicilan)}</span>`; }
+        }
+
+        const st = String(r.status || '').toUpperCase();
+        let stClass = 'border-slate-300 text-slate-600 bg-slate-50';
+        if (st === 'OK') stClass = 'border-emerald-300 text-emerald-700 bg-emerald-50';
+        else if (st === 'VERIFIKASI') stClass = 'border-amber-300 text-amber-700 bg-amber-50';
+        else if (st === 'NO ACC') stClass = 'border-rose-300 text-rose-700 bg-rose-50';
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="px-3 py-2 text-sm text-slate-600">${(page-1)*perPage + i + 1}</td>
+          <td class="px-3 py-2 text-sm">${esc(r.id)}</td>
+          <td class="px-3 py-2 text-sm">${esc(formatDateToDDMMYYYY(r.tanggal))}</td>
+          <td class="px-3 py-2 text-sm">${esc(r.npk)}</td>
+          <td class="px-3 py-2 text-sm">${esc(r.nama || '')}</td>
+          <td class="px-3 py-2">${telHtml}</td>
+          <td class="px-3 py-2 text-sm">${esc(r.instalasi || '')}</td>
+          <td class="px-3 py-2 text-sm">${esc(r.cicilan || '')}</td>
+          <td class="px-3 py-2 text-sm">${esc(r.tipehp || '')}</td>
+          <td class="px-3 py-2 text-sm">${esc(r.alamat || '')}</td>
+          <td class="px-3 py-2 text-sm">${esc(r.keterangan || '')}</td>
+          <td class="px-3 py-2 text-sm"><span class="badge ${stClass}">${esc(st || '-')}</span></td>
+          <td class="px-3 py-2 text-sm">${masaHtml}</td>
+        `;
+        tb.appendChild(tr);
+      });
+    }
+
+    function updatePager(){
+      const total = viewData.length; const maxPage = Math.max(1, Math.ceil(total / perPage));
+      $('#pageInfo').textContent = `Halaman ${page} dari ${maxPage}`;
+      $('#prevBtn').disabled = page <= 1; $('#nextBtn').disabled = page >= maxPage;
+    }
+
+    function doSort(newKey){ if (sortKey === newKey) sortAsc = !sortAsc; else { sortKey = newKey; sortAsc = true; } page = 1; sortAndRender(); }
+
+    async function loadDataForUser(uname){
+      $('#npkLabel').textContent = uname;
+      $('#loggedAs').textContent = 'Masuk sebagai: ' + uname; $('#loggedAs').classList.remove('hidden');
+
+      renderSkeleton(8);
+      showLoading(true);
+      try {
+        const url = `${ENDPOINT}?action=getData&npk=${encodeURIComponent(uname)}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json.status !== 'success') { toast(json.message || 'Gagal memuat data', false); currentData = []; viewData = []; renderTable([]); return; }
+        currentData = json.data || [];
+        page = 1; applyFilters();
+      } catch (err) { toast('Error: ' + err.message, false); currentData = []; viewData = []; renderTable([]); }
+      finally { showLoading(false); }
+    }
+
+    function exportCSV(){
+      const rows = [
+        ['No','Tanggal','NPK','Nama','No. Telp','Instalasi','Cicilan','Tipe HP','Alamat Kirim','Keterangan','Status','Masa Cicilan']
+      ];
+      viewData.forEach((r, i)=>{
+        rows.push([
+          String(i+1),
+          formatDateToDDMMYYYY(r.tanggal), String(r.npk||''), String(r.nama||''), String(r.notelp||''), String(r.instalasi||''),
+          String(r.cicilan||''), String(r.tipehp||''), String(r.alamat||''), String(r.keterangan||''), String(r.status||''), String(r.masaCicilan||'')
+        ]);
+      });
+      const csv = rows.map(a=>a.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='riwayat_pengajuan_hp.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    function printTable(){
+      const w = window.open('', '_blank');
+      const style = `<style>body{font-family:Poppins,Arial,sans-serif} table{border-collapse:collapse;width:100%} th,td{border:1px solid #e5e7eb;padding:6px 8px;font-size:12px} thead{background:#f1f5f9}</style>`;
+      const head = ['#','No','Tanggal','NPK','Nama','No. Telp','Instalasi','Cicilan','Tipe HP','Alamat Kirim','Keterangan','Status','Masa Cicilan'];
+      const rows = paginate(viewData, 1, 99999).map((r,i)=>[
+        (i+1), r.id, formatDateToDDMMYYYY(r.tanggal), r.npk, r.nama||'', r.notelp||'', r.instalasi||'', r.cicilan||'', r.tipehp||'', r.alamat||'', r.keterangan||'', (r.status||'').toUpperCase(), r.masaCicilan||''
+      ]);
+      const html = `<!doctype html><html><head><meta charset='utf-8'>${style}</head><body><h3>Riwayat Pengajuan HP – ${esc($('#npkLabel').textContent)}</h3><table><thead><tr>${head.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(String(c||''))}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
+      w.document.write(html); w.document.close(); w.focus(); w.print(); w.close();
+    }
+
+    function attachEvents(){
+      $('#sortNo').addEventListener('click', ()=> doSort('id'));
+      $('#sortTanggal').addEventListener('click', ()=> doSort('tanggal'));
+      $('#sortStatus').addEventListener('click', ()=> doSort('status'));
+      $('#searchInput').addEventListener('input', debounce(applyFilters, 250));
+      $('#statusFilter').addEventListener('change', ()=>{ page=1; applyFilters(); });
+      $('#perPage').addEventListener('change', ()=>{ perPage = parseInt($('#perPage').value,10)||10; page=1; sortAndRender(); });
+      $('#prevBtn').addEventListener('click', ()=>{ if(page>1){ page--; sortAndRender(); } });
+      $('#nextBtn').addEventListener('click', ()=>{ const maxPage=Math.max(1, Math.ceil(viewData.length / perPage)); if(page<maxPage){ page++; sortAndRender(); } });
+      $('#csvBtn').addEventListener('click', exportCSV);
+      $('#printBtn').addEventListener('click', printTable);
+      $('#refreshBtn').addEventListener('click', async ()=>{ const uname = getLoggedUsername(); if (uname) await loadDataForUser(uname); });
+    }
+
+    function debounce(fn, delay){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), delay); } }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      attachEvents();
+      const uname = getLoggedUsername();
+      if (!uname) { toast('Tidak ada sesi login. Silakan kembali ke halaman login.', false); $('#infoNote').textContent = 'Sesi tidak ditemukan. Kembali ke menu utama untuk login.'; $('#npkLabel').textContent = '-'; renderTable([]); return; }
+      await loadDataForUser(uname);
+    });
+  </script>
+</body>
+</html>

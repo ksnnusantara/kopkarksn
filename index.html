@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login - Koperasi Sigap Nusantara</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Sistem login anggota Koperasi Sigap Nusantara" />
+  <link rel="icon" href="logoksn.png" type="image/png" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { poppins: ['Poppins','ui-sans-serif','system-ui'] },
+          colors: {
+            brand:     '#dcbc4a',
+            brandDark: '#b89d3a',
+            ink:       '#1f2937'
+          },
+          boxShadow: { card: '0 8px 28px rgba(15, 23, 42, .10)' }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+
+  <style>
+    :root { color-scheme: light only; }
+    html, body { height: 100%; }
+    body { font-family: 'Poppins', sans-serif; color: #1f2937; }
+
+    /* === GOLD background === */
+    .bg-soft {
+      background:
+        radial-gradient(800px 400px at 15% -10%, rgba(255,255,255,.55), transparent 60%),
+        radial-gradient(800px 400px at 90% 110%, rgba(255,255,255,.45), transparent 60%),
+        linear-gradient(180deg, #FFF6D1 0%, #F3D46E 60%, #E7C24D 100%);
+    }
+
+    /* kartu kaca */
+    .glass {
+      background: rgba(255,255,255,.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(220,188,74,.18);
+      border-radius: 14px;
+      box-shadow: 0 0 0 1px rgba(220,188,74,.08), var(--tw-shadow), var(--tw-ring-shadow), 0 8px 28px rgba(15,23,42,.10);
+    }
+
+    /* input */
+    .field { background:#fff; border:1px solid rgba(220,188,74,.28); transition: box-shadow .2s, border-color .2s; }
+    .field:focus { border-color:#dcbc4a; box-shadow:0 0 0 4px rgba(220,188,74,.2); outline:none; }
+
+    /* tombol */
+    .btn { transition: transform .1s ease, box-shadow .2s ease, background-color .2s ease; }
+    .btn:active { transform: translateY(1px); }
+
+    /* toast */
+    .toast { position: fixed; top: 14px; right: 14px; z-index: 50; transform: translateY(-6px); opacity: 0; pointer-events: none; transition: .22s ease; }
+    .toast.show { transform: translateY(0); opacity: 1; pointer-events: all; }
+
+    /* transisi form */
+    .view { transition: opacity .2s, transform .2s; }
+    .view.hidden { opacity: 0; transform: translateY(4px); pointer-events: none; position: absolute; inset: 0; }
+  </style>
+</head>
+
+<body class="bg-soft min-h-screen">
+  <!-- Toasts -->
+  <div id="toastOk"  class="toast glass px-3.5 py-2.5 flex items-center gap-2.5 text-sm text-emerald-800 border border-emerald-200 bg-emerald-50/95">
+    <i class="fa-solid fa-circle-check text-emerald-600"></i><span id="toastOkText"></span>
+    <button class="ml-2 text-emerald-700/70 hover:text-emerald-900" onclick="hideToast('toastOk')" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div id="toastErr" class="toast glass px-3.5 py-2.5 flex items-center gap-2.5 text-sm text-rose-800 border border-rose-200 bg-rose-50/95">
+    <i class="fa-solid fa-triangle-exclamation text-rose-600"></i><span id="toastErrText"></span>
+    <button class="ml-2 text-rose-700/70 hover:text-rose-900" onclick="hideToast('toastErr')" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+
+  <!-- Layout -->
+  <main class="min-h-screen flex items-center justify-center px-4 py-8">
+    <section class="glass w-full max-w-md p-6 md:p-7">
+      <!-- header (jarak dipadatkan) -->
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white shadow ring-1 ring-black/5">
+          <img src="logoksn.png" alt="Logo KSN" class="w-9 h-9 rounded-full" />
+        </div>
+        <h1 class="text-[22px] font-semibold mt-2 text-ink">Koperasi Sigap Nusantara</h1>
+        <p class="text-slate-600 text-sm -mt-0.5">Masuk atau buat akun untuk melanjutkan.</p>
+      </div>
+
+      <!-- switcher (padat) -->
+      <div class="grid grid-cols-3 gap-1 bg-white/70 rounded-full p-1 mt-4 mb-3" role="tablist" aria-label="Jenis formulir">
+        <button id="tabLogin"  class="tab col-span-1 rounded-full py-1.5 text-sm font-medium bg-white shadow"     onclick="showView('login')"  role="tab" aria-selected="true">Masuk</button>
+        <button id="tabSignup" class="tab col-span-1 rounded-full py-1.5 text-sm font-medium hover:bg-white"     onclick="showView('signup')" role="tab" aria-selected="false">Daftar</button>
+        <button id="tabForgot" class="tab col-span-1 rounded-full py-1.5 text-sm font-medium hover:bg-white"     onclick="showView('forgot')" role="tab" aria-selected="false">Reset</button>
+      </div>
+
+      <!-- wrapper form (DISEMBUNYIKAN setelah login agar tidak ada jarak) -->
+      <div id="viewsWrap" class="relative min-h-[280px]">
+        <!-- LOGIN -->
+        <form id="viewLogin" class="view" autocomplete="on" onsubmit="event.preventDefault(); handleLogin();">
+          <label class="block text-sm mb-1" for="username">Username</label>
+          <div class="relative mb-3">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-user"></i></span>
+            <input id="username" class="field w-full rounded-lg pl-9 pr-3 py-2.5" placeholder="namauser" autocomplete="username" required autocapitalize="none" />
+          </div>
+
+          <label class="block text-sm mb-1" for="password">Password</label>
+          <div class="relative mb-2.5">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-lock"></i></span>
+            <input id="password" type="password" class="field w-full rounded-lg pl-9 pr-9 py-2.5" placeholder="••••••••" autocomplete="current-password" required />
+            <button type="button" class="absolute inset-y-0 right-0 pr-3 text-slate-400 hover:text-slate-600" aria-label="Tampilkan password" onclick="togglePass('password','eye1')"><i id="eye1" class="fa-solid fa-eye"></i></button>
+          </div>
+
+          <div class="flex items-center justify-between mb-4">
+            <label class="flex items-center gap-2 text-sm select-none cursor-pointer">
+              <input id="remember" type="checkbox" class="h-4 w-4 text-brand rounded focus:ring-brand" /> Ingat saya (username)
+            </label>
+            <a href="#" class="text-sm text-brand hover:text-brandDark" onclick="showView('forgot')">Lupa password?</a>
+          </div>
+
+          <button id="btnLogin" class="btn w-full bg-brand text-white rounded-lg py-2.5 hover:bg-brandDark focus:ring-4 focus:ring-brand/30">
+            <span id="btnLoginText">Masuk</span>
+            <span id="spLogin" class="hidden ml-2 animate-spin inline-block w-4 h-4 border-2 border-white/60 border-t-white rounded-full align-[-2px]"></span>
+          </button>
+        </form>
+
+        <!-- SIGNUP -->
+        <form id="viewSignup" class="view hidden" autocomplete="on" onsubmit="event.preventDefault(); handleSignup();">
+          <label class="block text-sm mb-1" for="su_username">Username</label>
+          <div class="relative mb-3">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-user"></i></span>
+            <input id="su_username" class="field w-full rounded-lg pl-9 pr-24 py-2.5" placeholder="minimal 3 karakter" minlength="3" required autocapitalize="none" />
+            <span id="badgeU" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2.5 py-1 rounded border bg-slate-50 text-slate-600">Cek</span>
+          </div>
+
+          <label class="block text-sm mb-1" for="su_email">Email</label>
+          <div class="relative mb-3">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-envelope"></i></span>
+            <input id="su_email" type="email" class="field w-full rounded-lg pl-9 pr-3 py-2.5" placeholder="email@contoh.com" />
+          </div>
+
+          <label class="block text-sm mb-1" for="su_password">Password</label>
+          <div class="relative mb-2">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-lock"></i></span>
+            <input id="su_password" type="password" class="field w-full rounded-lg pl-9 pr-9 py-2.5" placeholder="min. 6 karakter" required />
+            <button type="button" class="absolute inset-y-0 right-0 pr-3 text-slate-400 hover:text-slate-600" aria-label="Tampilkan password" onclick="togglePass('su_password','eye2')"><i id="eye2" class="fa-solid fa-eye"></i></button>
+          </div>
+          <div class="h-1 w-full bg-slate-200 rounded overflow-hidden mb-2"><div id="pwBar" class="h-full w-0 bg-brand transition-all"></div></div>
+          <p id="pwLabel" class="text-xs text-slate-600 mb-3">Kekuatan: -</p>
+
+          <label class="block text-sm mb-1" for="su_confirm">Ulangi Password</label>
+          <div class="relative mb-4">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-lock"></i></span>
+            <input id="su_confirm" type="password" class="field w-full rounded-lg pl-9 pr-9 py-2.5" placeholder="ulangi password" required />
+            <button type="button" class="absolute inset-y-0 right-0 pr-3 text-slate-400 hover:text-slate-600" aria-label="Tampilkan password" onclick="togglePass('su_confirm','eye3')"><i id="eye3" class="fa-solid fa-eye"></i></button>
+          </div>
+
+          <button id="btnSignup" class="btn w-full bg-brand text-white rounded-lg py-2.5 hover:bg-brandDark focus:ring-4 focus:ring-brand/30">
+            <span id="btnSignupText">Daftar</span>
+            <span id="spSignup" class="hidden ml-2 animate-spin inline-block w-4 h-4 border-2 border-white/60 border-t-white rounded-full align-[-2px]"></span>
+          </button>
+        </form>
+
+        <!-- FORGOT -->
+        <form id="viewForgot" class="view hidden" autocomplete="off" onsubmit="event.preventDefault(); handleRequestToken();">
+          <div class="space-y-3">
+            <p class="text-sm text-slate-700">Masukkan username & email. Kami kirim token reset.</p>
+
+            <div>
+              <label class="block text-sm mb-1" for="fp_username">Username</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-user"></i></span>
+                <input id="fp_username" class="field w-full rounded-lg pl-9 pr-3 py-2.5" placeholder="namauser" required />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm mb-1" for="fp_email">Email</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-envelope"></i></span>
+                <input id="fp_email" type="email" class="field w-full rounded-lg pl-9 pr-3 py-2.5" placeholder="email@contoh.com" />
+              </div>
+            </div>
+
+            <button id="btnToken" class="btn w-full bg-brand text-white rounded-lg py-2.5 hover:bg-brandDark focus:ring-4 focus:ring-brand/30">
+              <span id="btnTokenText">Kirim Token</span>
+              <span id="spToken" class="hidden ml-2 animate-spin inline-block w-4 h-4 border-2 border-white/60 border-t-white rounded-full align-[-2px]"></span>
+            </button>
+          </div>
+
+          <hr class="my-4"/>
+
+          <div class="space-y-3">
+            <p class="text-sm text-slate-700">Sudah dapat token? Ganti password di sini.</p>
+
+            <div>
+              <label class="block text-sm mb-1" for="fp_token">Token</label>
+              <input id="fp_token" class="field w-full rounded-lg px-3 py-2.5" placeholder="6 digit" inputmode="numeric" />
+            </div>
+
+            <div>
+              <label class="block text-sm mb-1" for="fp_new1">Password Baru</label>
+              <input id="fp_new1" type="password" class="field w-full rounded-lg px-3 py-2.5" placeholder="min. 6 karakter" />
+            </div>
+
+            <div>
+              <label class="block text-sm mb-1" for="fp_new2">Ulangi Password Baru</label>
+              <input id="fp_new2" type="password" class="field w-full rounded-lg px-3 py-2.5" placeholder="ulangi password" />
+            </div>
+
+            <button id="btnApply" type="button" onclick="handleApplyNewPassword()" class="btn w-full bg-brand text-white rounded-lg py-2.5 hover:bg-brandDark focus:ring-4 focus:ring-brand/30">
+              <span id="btnApplyText">Ubah Password</span>
+              <span id="spApply" class="hidden ml-2 animate-spin inline-block w-4 h-4 border-2 border-white/60 border-t-white rounded-full align-[-2px]"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- after login (jarak dekat) -->
+      <div id="afterLogin" class="hidden mt-2">
+        <div class="text-center">
+          <h2 class="text-[18px] font-semibold">Halo, <span id="who"></span> 👋</h2>
+          <p class="text-slate-700 text-sm">Pilih aplikasi yang ingin dibuka:</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <a href="#" onclick="goTo('hp')" class="glass p-3 text-center hover:shadow-card">
+            <i class="fa-solid fa-mobile-screen-button text-brand text-xl"></i>
+            <div class="mt-1 font-medium">Aplikasi HP</div>
+          </a>
+          <a href="#" onclick="goTo('reguler')" class="glass p-3 text-center hover:shadow-card">
+            <i class="fa-solid fa-shirt text-brand text-xl"></i>
+            <div class="mt-1 font-medium">Aplikasi Seragam</div>
+          </a>
+        </div>
+        <button class="mt-4 w-full rounded-lg border border-slate-300 py-2.5 text-slate-700 hover:bg-white/60" onclick="logout()">
+          <i class="fa-solid fa-right-from-bracket mr-2"></i>Keluar
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ====== CONFIG ======
+    const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwYvwXGDq-A2MZpSz7d8bhAz8UYc272TwN_klcqf3HbStGF8qBgkOLj4k2dYmNwLaz9/exec';
+    const REMEMBER_KEY = 'ksn-remember-username';
+    const BRUTE_LIMIT = 5, BRUTE_COOLDOWN = 2*60*1000;
+    let tries = 0, lockedUntil = 0, IS_ADMIN = false;
+
+    // ====== UTIL ======
+    const $ = id => document.getElementById(id);
+    function toastOk(t){ $('toastOkText').textContent = t; $('toastOk').classList.add('show'); setTimeout(()=>$('toastOk').classList.remove('show'), 3600); }
+    function toastErr(t){ $('toastErrText').textContent = t; $('toastErr').classList.add('show'); setTimeout(()=>$('toastErr').classList.remove('show'), 4000); }
+    function hideToast(id){ $(id).classList.remove('show'); }
+    function setBusy(btnId, spId, textId, txt){ $(btnId).disabled=true; $(spId).classList.remove('hidden'); if(textId){ $(textId).textContent=txt; } }
+    function clrBusy(btnId, spId, textId, txt){ $(btnId).disabled=false; $(spId).classList.add('hidden'); if(textId){ $(textId).textContent=txt; } }
+    function togglePass(inputId, eyeId){ const i=$(inputId), e=$(eyeId); if(i.type==='password'){ i.type='text'; e.classList.replace('fa-eye','fa-eye-slash'); } else { i.type='password'; e.classList.replace('fa-eye-slash','fa-eye'); } }
+    function showView(name){
+      ['tabLogin','tabSignup','tabForgot'].forEach(t => $(t).classList.remove('bg-white','shadow'));
+      if(name==='login')  $('tabLogin').classList.add('bg-white','shadow');
+      if(name==='signup') $('tabSignup').classList.add('bg-white','shadow');
+      if(name==='forgot') $('tabForgot').classList.add('bg-white','shadow');
+      ['viewLogin','viewSignup','viewForgot'].forEach(v => $(v).classList.add('hidden'));
+      $('view'+name.charAt(0).toUpperCase()+name.slice(1)).classList.remove('hidden');
+    }
+
+    // password strength
+    $('su_password')?.addEventListener('input', e=>{
+      const s=e.target.value||''; let score=0;
+      if(s.length>=6)score++; if(/[A-Z]/.test(s))score++; if(/[a-z]/.test(s))score++; if(/\d/.test(s))score++; if(/[^\w]/.test(s))score++;
+      const pct=Math.min(100,score*20); $('pwBar').style.width=pct+'%';
+      const label=['Sangat Lemah','Lemah','Cukup','Baik','Kuat'][Math.max(0,score-1)]||'-';
+      $('pwLabel').textContent='Kekuatan: '+label;
+    });
+
+    // debounce check username
+    $('su_username')?.addEventListener('input', (function(ms){let t,last='';return function(){
+      clearTimeout(t); t=setTimeout(async ()=>{
+        const u=($('su_username').value||'').trim(); const el=$('badgeU');
+        const base='absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2.5 py-1 rounded border ';
+        if(!u){ el.textContent='Cek'; el.className=base+'bg-slate-50 text-slate-600'; return; }
+        if(u===last) return; last=u;
+        if(u.length<3 || /\s/.test(u)){ el.textContent='Kurang'; el.className=base+'bg-amber-50 text-amber-700 border-amber-200'; return; }
+        try{
+          const out = await api('checkusername', {username:u}, 8000);
+          if(out.ok && typeof out.available==='boolean'){
+            el.textContent = out.available?'Tersedia':'Dipakai';
+            el.className = base + (out.available?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-rose-50 text-rose-700 border-rose-200');
+          }
+        }catch{}
+      }, ms||350); } })(350));
+
+    // brute
+    function bruteLocked(){ return Date.now()<lockedUntil; }
+    function lockBrute(){ lockedUntil=Date.now()+BRUTE_COOLDOWN; toastErr('Terlalu banyak percobaan. Coba lagi beberapa menit.'); }
+
+    async function api(action, payload, timeout=12000){
+      const ctrl = new AbortController(); const to=setTimeout(()=>ctrl.abort(), timeout);
+      const res=await fetch(GAS_ENDPOINT,{method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}, body:new URLSearchParams({action, ...(payload||{})}), signal:ctrl.signal, cache:'no-store'}).catch(e=>{clearTimeout(to);throw e;});
+      clearTimeout(to);
+      if(!res.ok) throw new Error('Jaringan bermasalah');
+      let data; try{ data=await res.json(); }catch{ throw new Error('Respon tidak valid'); }
+      return data;
+    }
+
+    // ====== FLOWS ======
+    async function handleLogin(){
+      const u=($('username').value||'').trim();
+      const p=$('password').value||'';
+      if(!u||!p) return toastErr('Username dan password harus diisi.');
+      if(bruteLocked()) return toastErr('Sementara terkunci. Coba lagi nanti.');
+      setBusy('btnLogin','spLogin','btnLoginText','Memproses...');
+      try{
+        const out=await api('login',{username:u,password:p});
+        if(out.ok){
+          if($('remember').checked) localStorage.setItem(REMEMBER_KEY,u); else localStorage.removeItem(REMEMBER_KEY);
+          sessionStorage.setItem('username', out.username||u);
+          tries=0;
+          showAfterLogin(out.username||u);
+          toastOk('Login berhasil!');
+        } else { tries++; if(tries>=BRUTE_LIMIT) lockBrute(); toastErr(out.error||'Login gagal'); }
+      } catch(e){ toastErr(e.message||'Koneksi gagal.'); }
+      clrBusy('btnLogin','spLogin','btnLoginText','Masuk');
+    }
+
+    async function handleSignup(){
+      const u=($('su_username').value||'').trim();
+      const e=($('su_email').value||'').trim();
+      const p=$('su_password').value||'';
+      const c=$('su_confirm').value||'';
+      if(u.length<3) return toastErr('Username minimal 3 karakter.');
+      if(/\s/.test(u)) return toastErr('Username tidak boleh ada spasi.');
+      if(e && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return toastErr('Email tidak valid.');
+      if(p.length<6) return toastErr('Password minimal 6 karakter.');
+      if(p!==c) return toastErr('Konfirmasi password tidak sama.');
+      setBusy('btnSignup','spSignup','btnSignupText','Memproses...');
+      try{
+        const out=await api('signup',{username:u,password:p,email:e});
+        if(out.ok){ toastOk('Akun dibuat. Silakan masuk.'); $('su_username').value=''; $('su_email').value=''; $('su_password').value=''; $('su_confirm').value=''; showView('login'); }
+        else toastErr(out.error||'Gagal membuat akun.');
+      } catch(e){ toastErr(e.message||'Koneksi gagal.'); }
+      clrBusy('btnSignup','spSignup','btnSignupText','Daftar');
+    }
+
+    async function handleRequestToken(){
+      const u=($('fp_username').value||'').trim();
+      const e=($('fp_email').value||'').trim();
+      if(!u) return toastErr('Username wajib diisi.');
+      if(e && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return toastErr('Email tidak valid.');
+      setBusy('btnToken','spToken','btnTokenText','Mengirim...');
+      try{ const out=await api('requestreset',{username:u,email:e}); out.ok?toastOk('Token dikirim. Cek email Anda.'):toastErr(out.error||'Gagal mengirim token.'); }
+      catch(e){ toastErr(e.message||'Koneksi gagal.'); }
+      clrBusy('btnToken','spToken','btnTokenText','Kirim Token');
+    }
+
+    async function handleApplyNewPassword(){
+      const t=($('fp_token').value||'').trim();
+      const p1=$('fp_new1').value||''; const p2=$('fp_new2').value||'';
+      if(!/^\d{1,}$/.test(t)) return toastErr('Token harus berupa angka.');
+      if(p1.length<6) return toastErr('Password baru minimal 6 karakter.');
+      if(p1!==p2) return toastErr('Konfirmasi password tidak sama.');
+      setBusy('btnApply','spApply','btnApplyText','Memproses...');
+      try{ const out=await api('setnewpassword',{token:t,newPassword:p1}); out.ok?(toastOk('Password berhasil diubah. Silakan masuk.'), showView('login')):toastErr(out.error||'Gagal mengubah password.'); }
+      catch(e){ toastErr(e.message||'Koneksi gagal.'); }
+      clrBusy('btnApply','spApply','btnApplyText','Ubah Password');
+    }
+
+    // ====== AFTER LOGIN ======
+    function showAfterLogin(u){
+      document.querySelector('.grid[role="tablist"]').classList.add('hidden');
+      $('viewsWrap').classList.add('hidden');        // <— hilangkan ruang kosong
+      $('afterLogin').classList.remove('hidden');    // tampilkan pilihan
+      $('who').textContent = u;
+      IS_ADMIN = String(u||'').toLowerCase()==='adminksn';
+    }
+    function goTo(kind){
+      const u = sessionStorage.getItem('username') || '';
+      const qs = new URLSearchParams({ user: u }).toString();
+      if(IS_ADMIN){
+        if(kind==='hp') location.href = `aplikasi_hp.html?${qs}`;
+        else location.href = `aplikasi_seragam.html?${qs}`;
+      }else{
+        if(kind==='hp') location.href = `pengajuanhp.html?${qs}`;
+        else location.href = `reguler.html?${qs}`;
+      }
+    }
+    function logout(){ sessionStorage.removeItem('username'); location.reload(); }
+
+    // ====== INIT ======
+    (function init(){
+      const remembered = localStorage.getItem(REMEMBER_KEY);
+      if(remembered){ $('username').value=remembered; $('remember').checked=true; }
+      const u = sessionStorage.getItem('username');
+      if(u) showAfterLogin(u);
+      // Enter handler
+      document.addEventListener('keydown', (e)=>{
+        if(e.key!=='Enter') return;
+        if(!$('afterLogin').classList.contains('hidden')) return;
+        if(!$('viewLogin').classList.contains('hidden'))      handleLogin();
+        else if(!$('viewSignup').classList.contains('hidden')) handleSignup();
+        else if(!$('viewForgot').classList.contains('hidden')) handleRequestToken();
+      });
+    })();
+  </script>
+</body>
+</html>
