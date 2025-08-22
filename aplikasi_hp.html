@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aplikasi HP – Versi Pro</title>
+  <title>Aplikasi HP – Versi Pro (Scroll Tanpa Halaman)</title>
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -28,6 +28,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
+  <!-- html2canvas untuk JPEG export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
   <style>
     :root{ --yellow:#f59e0b }
     html,body{height:100%}
@@ -40,10 +43,10 @@
     .badge-go{background:#dcfce7;color:#166534}
     .progress-wrap{height:8px;background:#f1f5f9;border-radius:9999px;overflow:hidden}
     .progress-bar{height:100%;background:var(--yellow);width:0}
-    .sortable{cursor:pointer}
-    .sortable:after{content:'\25BE';margin-left:6px;opacity:.4}
-    .sortable.asc:after{content:'\25B4'}
-
+    .sortable{cursor:pointer; user-select:none; white-space:nowrap;}
+    .sortable .arrow { opacity:.45; margin-left:6px; }
+    .sortable[aria-sort="ascending"] .arrow::after  { content:'▲'; }
+    .sortable[aria-sort="descending"] .arrow::after { content:'▼'; }
     .metric-card{
       background:#fff;border-radius:16px;box-shadow:0 8px 28px rgba(15,23,42,.10);
       padding:18px 20px;display:flex;align-items:center;gap:14px;
@@ -58,6 +61,15 @@
     .icon-amber{ background:#fff2cc;color:#d97706 }
     .icon-red  { background:#ffe4e6;color:#ef4444 }
 
+    /* TABLE CONTAINER SCROLL (Data HP & Vendor) */
+    .table-scroll {
+      max-height: 520px;      /* atur tinggi area scroll di sini */
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+    }
+    thead.sticky-top { position: sticky; top: 0; z-index: 5; }
+
     @media (max-width: 768px) {
       .container { padding-left: 1rem; padding-right: 1rem; }
       .tab-btn { font-size: 0.75rem; padding: 0.5rem; }
@@ -65,11 +77,10 @@
       .metric-title { font-size: 12px; }
       .metric-icon { width: 40px; height: 40px; }
       .metric-card { padding: 14px 16px; }
-      table { font-size: 0.75rem; }
+      table { font-size: 0.8rem; }
       th, td { padding: 0.5rem 0.25rem; }
       .progress-wrap { height: 6px; }
     }
-
     .ui-datepicker { font-size:0.9rem; width:17em; }
     .ui-datepicker .ui-datepicker-header { padding:0.3em 0; }
     .ui-datepicker .ui-datepicker-title { font-size:0.9rem; }
@@ -80,14 +91,20 @@
     @media (max-width: 768px) {
       #edit-modal .bg-white { margin:1rem;width:calc(100% - 2rem); }
     }
+
+    /* Styling capture vendor */
+    .vendor-capture-container { background: white; padding: 20px; border-radius: 8px; }
+    .vendor-capture-title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+    .vendor-capture-date { text-align: center; font-size: 12px; margin-bottom: 20px; color: #666; }
+    .vendor-filter-container { background-color: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
+    .vendor-filter-title { font-weight: 600; margin-bottom: 8px; color: #374151; }
   </style>
 </head>
 <body class="min-h-full">
   <div class="container mx-auto px-4 py-4 md:py-8 max-w-7xl">
     <!-- Tombol Kembali -->
     <div class="mb-4">
-      <a href="index.html"
-         class="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition duration-300">
+      <a href="index.html" class="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition duration-300">
         <i class="fas fa-arrow-left mr-2"></i> Kembali
       </a>
     </div>
@@ -105,6 +122,9 @@
       </button>
       <button class="tab-btn px-3 py-2 md:px-4 font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap" data-tab="data">
         <i class="fas fa-table mr-1 md:mr-2"></i>Data HP
+      </button>
+      <button class="tab-btn px-3 py-2 md:px-4 font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap" data-tab="vendor">
+        <i class="fas fa-truck mr-1 md:mr-2"></i>Vendor
       </button>
       <button class="tab-btn px-3 py-2 md:px-4 font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap" data-tab="dashboard">
         <i class="fas fa-chart-bar mr-1 md:mr-2"></i>Dashboard
@@ -125,9 +145,7 @@
             <i class="fas fa-triangle-exclamation mt-0.5"></i>
             <div>
               <div class="font-semibold">NPK ini masih memiliki angsuran aktif</div>
-              <div class="text-sm">
-                Sistem mendeteksi ada cicilan yang belum selesai untuk NPK ini. Pastikan data yang diinput benar.
-              </div>
+              <div class="text-sm">Sistem mendeteksi ada cicilan yang belum selesai untuk NPK ini. Pastikan data yang diinput benar.</div>
               <div id="angsuran-list" class="mt-2 text-xs text-yellow-900"></div>
               <label class="mt-2 inline-flex items-center gap-2 text-sm">
                 <input type="checkbox" id="angsuran-ack-input" class="h-4 w-4 rounded border-gray-300">
@@ -140,79 +158,54 @@
         <form id="input-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-            <input type="text" id="tanggal" name="tanggal" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY" required>
+            <input type="text" id="tanggal" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY" required>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">NPK</label>
-            <input type="text" id="npk" name="npk" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+            <input type="text" id="npk" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">No. Telp</label>
-            <input type="text" id="notelp" name="notelp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+            <input type="text" id="notelp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Cicilan (bulan)</label>
-            <input type="number" id="cicilan" name="cicilan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" min="1" required>
+            <input type="number" id="cicilan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" min="1" required>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Tipe HP</label>
-            <select id="tipehp" name="tipehp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+            <select id="tipehp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
               <option value="">Pilih Tipe HP</option>
-              <option value="VIVO Y29 6/128">VIVO Y29 6/128</option>
-              <option value="VIVO Y29 8/128">VIVO Y29 8/128</option>
-              <option value="VIVO Y29 8/256">VIVO Y29 8/256</option>
-              <option value="Y19S PRO 4/64 GB">Y19S PRO 4/64 GB</option>
-              <option value="Y19S PRO 4/128 GB">Y19S PRO 4/128 GB</option>
-              <option value="Y19S PRO 6/128 GB">Y19S PRO 6/128 GB</option>
-              <option value="REDMI 14C 6/128">REDMI 14C 6/128</option>
-              <option value="REDMI 14C 8/256">REDMI 14C 8/256</option>
-              <option value="REDMI NOTE 14 8/128">REDMI NOTE 14 8/128</option>
-              <option value="REDMI NOTE 14 8/256">REDMI NOTE 14 8/256</option>
-              <option value="REDMI NOTE 14 8/256 5G">REDMI NOTE 14 8/256 5G</option>
-              <option value="REDMI NOTE 14 12/512 5G">REDMI NOTE 14 12/512 5G</option>
-              <option value="REDMI 13 8/128">REDMI 13 8/128</option>
-              <option value="REDMI 13 8/256">REDMI 13 8/256</option>
-              <option value="REDMI POCO PAD 8/256">REDMI POCO PAD 8/256</option>
-              <option value="OPPO A60 8/256">OPPO A60 8/256</option>
-              <option value="OPPO A3X 6/128">OPPO A3X 6/128</option>
-              <option value="REALME C75 8/128">REALME C75 8/128</option>
-              <option value="REALME C75 8/256">REALME C75 8/256</option>
-              <option value="REALME NOTE 60 6/128">REALME NOTE 60 6/128</option>
-              <option value="SAMSUNG A06 4/64">SAMSUNG A06 4/64</option>
-              <option value="SAMSUNG A06 4/128">SAMSUNG A06 4/128</option>
-              <option value="SAMSUNG A06 6/128">SAMSUNG A06 6/128</option>
-              <option value="SAMSUNG A16 8/128">SAMSUNG A16 8/128</option>
-              <option value="SAMSUNG A16 8/256">SAMSUNG A16 8/256</option>
-              <option value="SAMSUNG A16 8/256 5G">SAMSUNG A16 8/256 5G</option>
-              <option value="SMART 10 4/128 GB">SMART 10 4/128 GB</option>
-              <option value="SMART 10 PLUS 8/128 GB">SMART 10 PLUS 8/128 GB</option>
-              <option value="HOT 60i 8/256 GB">HOT 60i 8/256 GB</option>
-              <option value="HOT 60 PRO 8/256 GB">HOT 60 PRO 8/256 GB</option>
-              <option value="INFINIX HOT 50 PRO+ 8/256">INFINIX HOT 50 PRO+ 8/256</option>
-              <option value="TECNO SPARK GO 1 4/128">TECNO SPARK GO 1 4/128</option>
-              <option value="POVA 7 8/128 GB">POVA 7 8/128 GB</option>
-              <option value="POVA 7 8/256 GB">POVA 7 8/256 GB</option>
-              <option value="CAMON 40 8/256 GB">CAMON 40 8/256 GB</option>
-              <option value="ADVAN TAB VX LITE 6/128GB">ADVAN TAB VX LITE 6/128GB</option>
+              <option>VIVO Y29 6/128</option><option>VIVO Y29 8/128</option><option>VIVO Y29 8/256</option>
+              <option>Y19S PRO 4/64 GB</option><option>Y19S PRO 4/128 GB</option><option>Y19S PRO 6/128 GB</option>
+              <option>REDMI 14C 6/128</option><option>REDMI 14C 8/256</option>
+              <option>REDMI NOTE 14 8/128</option><option>REDMI NOTE 14 8/256</option><option>REDMI NOTE 14 8/256 5G</option><option>REDMI NOTE 14 12/512 5G</option>
+              <option>REDMI 13 8/128</option><option>REDMI 13 8/256</option><option>REDMI POCO PAD 8/256</option>
+              <option>OPPO A60 8/256</option><option>OPPO A3X 6/128</option>
+              <option>REALME C75 8/128</option><option>REALME C75 8/256</option><option>REALME NOTE 60 6/128</option>
+              <option>SAMSUNG A06 4/64</option><option>SAMSUNG A06 4/128</option><option>SAMSUNG A06 6/128</option>
+              <option>SAMSUNG A16 8/128</option><option>SAMSUNG A16 8/256</option><option>SAMSUNG A16 8/256 5G</option>
+              <option>SMART 10 4/128 GB</option><option>SMART 10 PLUS 8/128 GB</option>
+              <option>HOT 60i 8/256 GB</option><option>HOT 60 PRO 8/256 GB</option><option>INFINIX HOT 50 PRO+ 8/256</option>
+              <option>TECNO SPARK GO 1 4/128</option><option>POVA 7 8/128 GB</option><option>POVA 7 8/256 GB</option>
+              <option>CAMON 40 8/256 GB</option><option>ADVAN TAB VX LITE 6/128GB</option>
+              <option>LAINNYA</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Kirim</label>
-            <input type="text" id="alamat" name="alamat" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+            <input type="text" id="alamat" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select id="status" name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            <select id="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
               <option value="">Pilih Status</option>
-              <option value="OK">OK</option>
-              <option value="CANCEL">CANCEL</option>
-              <option value="NO ACC">NO ACC</option>
-              <option value="VERIFIKASI">VERIFIKASI</option>
+              <option>OK</option><option>CANCEL</option><option>NO ACC</option><option>VERIFIKASI</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
-            <input type="text" id="keterangan" name="keterangan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            <input type="text" id="keterangan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
           </div>
           <div class="md:col-span-2">
             <button id="btn-submit" type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-md transition duration-300">
@@ -223,7 +216,7 @@
       </div>
     </section>
 
-    <!-- ================= DATA ================= -->
+    <!-- ================= DATA (SCROLL TANPA PAGINATION) ================= -->
     <section id="data-section" class="tab-content section-hidden">
       <div class="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
@@ -258,10 +251,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Filter Status</label>
             <select id="filter-status" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
               <option value="">Semua Status</option>
-              <option value="OK">OK</option>
-              <option value="CANCEL">CANCEL</option>
-              <option value="NO ACC">NO ACC</option>
-              <option value="VERIFIKASI">VERIFIKASI</option>
+              <option>OK</option><option>CANCEL</option><option>NO ACC</option><option>VERIFIKASI</option>
             </select>
           </div>
           <div>
@@ -274,19 +264,20 @@
           </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <!-- SCROLL CONTAINER -->
+        <div class="table-scroll">
           <table id="data-table" class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+            <thead class="bg-gray-50 sticky-top">
               <tr>
-                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NPK</th>
-                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. Telp</th>
-                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe HP</th>
-                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cicilan</th>
-                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Masa Cicilan</th>
+                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-col="id" aria-sort="none">ID <span class="arrow"></span></th>
+                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-col="tanggal" aria-sort="ascending">Tanggal <span class="arrow"></span></th>
+                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-col="npk" aria-sort="none">NPK <span class="arrow"></span></th>
+                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-col="nama" aria-sort="none">Nama <span class="arrow"></span></th>
+                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-col="notelp" aria-sort="none">No. Telp <span class="arrow"></span></th>
+                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-col="tipehp" aria-sort="none">Tipe HP <span class="arrow"></span></th>
+                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-col="cicilan" aria-sort="none">Cicilan <span class="arrow"></span></th>
+                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-col="status" aria-sort="none">Status <span class="arrow"></span></th>
+                <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-col="masa" aria-sort="none">Masa Cicilan <span class="arrow"></span></th>
                 <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
@@ -294,19 +285,98 @@
           </table>
         </div>
 
-        <div class="mt-4 flex flex-col md:flex-row justify-between items-center gap-2">
-          <div class="text-sm text-gray-700">
-            Menampilkan <span id="showing-count">0</span> dari <span id="total-count">0</span> data
-          </div>
-          <div class="flex space-x-1">
-            <button id="prev-page" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm disabled:opacity-50" disabled>
-              <i class="fas fa-chevron-left"></i>
+        <div class="mt-3 text-sm text-gray-700">
+          Menampilkan <span id="showing-count">0</span> dari <span id="total-count">0</span> data
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VENDOR ================= -->
+    <section id="vendor-section" class="tab-content section-hidden">
+      <div class="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+          <h2 class="text-lg md:text-xl font-semibold text-gray-800 mb-2 md:mb-0">Data Vendor (Semua Data)</h2>
+          <div class="flex flex-wrap gap-2">
+            <button id="vendor-refresh-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+              <i class="fas fa-sync-alt mr-1"></i> Refresh
             </button>
-            <span id="page-info" class="px-3 py-1 text-sm">Halaman 1 dari 1</span>
-            <button id="next-page" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm disabled:opacity-50" disabled>
-              <i class="fas fa-chevron-right"></i>
+            <button id="vendor-export-excel-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+              <i class="fas fa-file-excel mr-1"></i> Excel
             </button>
+            <button id="vendor-export-pdf-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+              <i class="fas fa-file-pdf mr-1"></i> PDF
+            </button>
+            <button id="vendor-export-jpeg-btn" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+              <i class="fas fa-file-image mr-1"></i> JPEG
+            </button>
+            <div class="relative">
+              <input type="text" id="vendor-search-input" placeholder="Cari (NPK/Nama/Telp/Tipe/Alamat)..." class="pl-8 pr-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+              <i class="fas fa-search absolute left-2 top-2 text-gray-400"></i>
+            </div>
           </div>
+        </div>
+
+        <div class="vendor-filter-container">
+          <div class="vendor-filter-title">Filter Data Vendor</div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Urutkan Tanggal</label>
+              <select id="vendor-sort-tanggal" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                <option value="desc">Terbaru ke Terlama</option>
+                <option value="asc">Terlama ke Terbaru</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Filter Tipe HP</label>
+              <select id="vendor-filter-tipehp" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                <option value="">Semua Tipe</option>
+                <option value="VIVO">VIVO</option><option value="REDMI">REDMI</option>
+                <option value="OPPO">OPPO</option><option value="REALME">REALME</option>
+                <option value="SAMSUNG">SAMSUNG</option><option value="LAINNYA">LAINNYA</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Filter Status</label>
+              <select id="vendor-filter-status" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                <option value="">Semua Status</option>
+                <option value="OK">OK</option><option value="CANCEL">CANCEL</option><option value="NO ACC">NO ACC</option><option value="VERIFIKASI">VERIFIKASI</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Awal</label>
+              <input type="text" id="vendor-tanggal-awal" class="tanggal-input w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Akhir</label>
+              <input type="text" id="vendor-tanggal-akhir" class="tanggal-input w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+            </div>
+            <div class="lg:col-span-1 flex items-end">
+              <button id="vendor-clear-filter" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm transition duration-300 w-full">
+                <i class="fas fa-eraser mr-1"></i> Bersihkan Filter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table id="vendor-table" class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50 sticky-top">
+              <tr>
+                <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NPK</th>
+                <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. Telp</th>
+                <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
+                <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alamat Kirim</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200"></tbody>
+          </table>
+        </div>
+
+        <div class="mt-3 text-sm text-gray-700">
+          Menampilkan <span id="vendor-showing-count">0</span> dari <span id="vendor-total-count">0</span> data
         </div>
       </div>
     </section>
@@ -316,10 +386,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
         <div id="card-total" class="metric-card" role="button" tabindex="0" data-qfilter="ALL" aria-label="Total HP">
           <div class="metric-icon icon-blue"><i class="fas fa-mobile-screen-button"></i></div>
-          <div>
-            <div class="metric-title">Total HP</div>
-            <div id="total-hp" class="metric-value">0</div>
-          </div>
+          <div><div class="metric-title">Total HP</div><div id="total-hp" class="metric-value">0</div></div>
         </div>
         <div id="card-ok" class="metric-card" role="button" tabindex="0" data-qfilter="OK" aria-label="Status OK">
           <div class="metric-icon icon-green"><i class="fas fa-check"></i></div>
@@ -362,7 +429,7 @@
           <h3 class="text-md font-medium mb-2 text-gray-700">Tentang Aplikasi</h3>
           <div class="bg-gray-50 p-4 rounded-md">
             <p class="text-sm text-gray-700 mb-2"><strong>Nama Aplikasi:</strong> Aplikasi HP – Versi Pro</p>
-            <p class="text-sm text-gray-700 mb-2"><strong>Versi:</strong> 2025.08.19</p>
+            <p class="text-sm text-gray-700 mb-2"><strong>Versi:</strong> 2025.08.22</p>
             <p class="text-sm text-gray-700"><strong>Deskripsi:</strong> Sistem manajemen data handphone karyawan dengan fitur pencatatan, monitoring, dan pelaporan.</p>
           </div>
         </div>
@@ -370,7 +437,7 @@
     </section>
   </div>
 
-  <!-- Modal Edit (tetap ada, tidak diubah pada permintaan ini) -->
+  <!-- Modal Edit -->
   <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-screen overflow-y-auto">
       <div class="p-4 md:p-6">
@@ -380,53 +447,66 @@
         </div>
 
         <form id="edit-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input type="hidden" id="edit-id" name="id">
-          <input type="hidden" id="edit-row" name="row">
+          <input type="hidden" id="edit-id">
+          <input type="hidden" id="edit-row">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-            <input type="text" id="edit-tanggal" name="tanggal" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY" required>
+            <input type="text" id="edit-tanggal" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY" required>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">NPK</label>
-            <input type="text" id="edit-npk" name="npk" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+            <input type="text" id="edit-npk" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">No. Telp</label>
-            <input type="text" id="edit-notelp" name="notelp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+            <input type="text" id="edit-notelp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Cicilan (bulan)</label>
-            <input type="number" id="edit-cicilan" name="cicilan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" min="1" required>
+            <input type="number" id="edit-cicilan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" min="1" required>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Tipe HP</label>
-            <select id="edit-tipehp" name="tipehp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required></select>
+            <select id="edit-tipehp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+              <option value="">Pilih Tipe HP</option>
+              <option>VIVO Y29 6/128</option><option>VIVO Y29 8/128</option><option>VIVO Y29 8/256</option>
+              <option>Y19S PRO 4/64 GB</option><option>Y19S PRO 4/128 GB</option><option>Y19S PRO 6/128 GB</option>
+              <option>REDMI 14C 6/128</option><option>REDMI 14C 8/256</option>
+              <option>REDMI NOTE 14 8/128</option><option>REDMI NOTE 14 8/256</option><option>REDMI NOTE 14 8/256 5G</option><option>REDMI NOTE 14 12/512 5G</option>
+              <option>REDMI 13 8/128</option><option>REDMI 13 8/256</option><option>REDMI POCO PAD 8/256</option>
+              <option>OPPO A60 8/256</option><option>OPPO A3X 6/128</option>
+              <option>REALME C75 8/128</option><option>REALME C75 8/256</option><option>REALME NOTE 60 6/128</option>
+              <option>SAMSUNG A06 4/64</option><option>SAMSUNG A06 4/128</option><option>SAMSUNG A06 6/128</option>
+              <option>SAMSUNG A16 8/128</option><option>SAMSUNG A16 8/256</option><option>SAMSUNG A16 8/256 5G</option>
+              <option>SMART 10 4/128 GB</option><option>SMART 10 PLUS 8/128 GB</option>
+              <option>HOT 60i 8/256 GB</option><option>HOT 60 PRO 8/256 GB</option><option>INFINIX HOT 50 PRO+ 8/256</option>
+              <option>TECNO SPARK GO 1 4/128</option><option>POVA 7 8/128 GB</option><option>POVA 7 8/256 GB</option>
+              <option>CAMON 40 8/256 GB</option><option>ADVAN TAB VX LITE 6/128GB</option>
+              <option>LAINNYA</option>
+            </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Kirim</label>
-            <input type="text" id="edit-alamat" name="alamat" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+            <input type="text" id="edit-alamat" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select id="edit-status" name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            <select id="edit-status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
               <option value="">Pilih Status</option>
-              <option value="OK">OK</option>
-              <option value="CANCEL">CANCEL</option>
-              <option value="NO ACC">NO ACC</option>
-              <option value="VERIFIKASI">VERIFIKASI</option>
+              <option>OK</option><option>CANCEL</option><option>NO ACC</option><option>VERIFIKASI</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
-            <input type="text" id="edit-keterangan" name="keterangan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            <input type="text" id="edit-keterangan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Stop Mulai</label>
-            <input type="text" id="edit-stop-mulai" name="stop_mulai" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+            <input type="text" id="edit-stop-mulai" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Lanjut Mulai</label>
-            <input type="text" id="edit-lanjut-mulai" name="lanjut_mulai" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+            <input type="text" id="edit-lanjut-mulai" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
           </div>
           <div class="md:col-span-2">
             <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-md transition duration-300">
@@ -450,249 +530,293 @@
     </button>
   </div>
 
-  <!-- ================= SCRIPTS ================= -->
+  <!-- ================= SCRIPTS (DIPERSEDERHANA) ================= -->
   <script>
     // ====== KONFIGURASI ======
-    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzJTpEVdK54m0NwY-AYqWq0JGCsiIX2mBnvRzbjzN5fgah5rYlczFXTCadS0WDxE6Ld/exec';
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxWufKKeP8iZ57Gj3aC7wffIW114F17IFEkY_8z3x43z63JjjcmHKohHBJs6kkm2jlW/exec';
 
-    // ====== ENFORCE ADMIN-ONLY ======
+    // ====== ADMIN-ONLY ======
     (function enforceAdmin(){
       const qsUser = new URLSearchParams(location.search).get('user') || '';
       const ssUser = sessionStorage.getItem('username') || '';
       const USERNAME = (ssUser || qsUser || '').trim();
-      const IS_ADMIN = USERNAME.toLowerCase() === 'adminksn';
-      if (!IS_ADMIN) {
+      if ((USERNAME || '').toLowerCase() !== 'adminksn') {
         alert('Akses ditolak! Hanya adminksn yang bisa membuka halaman ini.');
         window.location.href = 'index.html';
       }
     })();
 
-    // ====== STATE GLOBAL ======
+    // ====== STATE ======
     let allData = [];
     let filteredData = [];
-    let currentPage = 1;
-    const itemsPerPage = 10;
     let sortColumn = 'tanggal';
     let sortDirection = 'asc';
     let tipeHpChart = null, statusChart = null;
-    let quickFilter = 'ALL';
 
-    $(document).ready(function() {
+    // Vendor
+    let vendorData = [];
+    let vendorFiltered = [];
+
+    // ====== INIT ======
+    $(function(){
       $(".tanggal-input").datepicker({ dateFormat: "dd/mm/yy", changeMonth: true, changeYear: true, yearRange: "2020:2035" });
 
       // Tab nav
-      $('.tab-btn').click(function() {
+      $('.tab-btn').on('click', function() {
         const tabId = $(this).data('tab');
         $('.tab-btn').removeClass('border-b-2 border-yellow-500 text-yellow-600').addClass('text-gray-500 hover:text-gray-700');
         $(this).removeClass('text-gray-500 hover:text-gray-700').addClass('border-b-2 border-yellow-500 text-yellow-600');
         $('.tab-content').addClass('section-hidden');
         $(`#${tabId}-section`).removeClass('section-hidden');
-        if (tabId === 'data') { renderTable(); }
-        if (tabId === 'dashboard') { loadDashboard(); }
+        if (tabId === 'data') renderTable();
+        if (tabId === 'dashboard') loadDashboard();
+        if (tabId === 'vendor') { syncVendorFromAll(); renderVendorTable(); }
       });
 
-      // Submit
-      $('#input-form').submit(function(e){ e.preventDefault(); submitForm(); });
-      $('#edit-form').submit(function(e){ e.preventDefault(); updateData(); });
+      // Input submit/update
+      $('#input-form').on('submit', e => { e.preventDefault(); submitForm(); });
+      $('#edit-form').on('submit', e => { e.preventDefault(); updateData(); });
+      $('#close-modal-btn').on('click', () => $('#edit-modal').addClass('hidden'));
 
-      // Tombol
-      $('#refresh-btn').click(loadData);
-      $('#export-excel-btn').click(exportToExcel);
-      $('#export-pdf-btn').click(exportToPDF);
-      $('#refresh-all-btn').click(refreshAllData);
-      document.getElementById('close-notification').addEventListener('click', ()=>document.getElementById('notification').classList.add('translate-y-20','opacity-0'));
-      $('#close-modal-btn').click(()=>$('#edit-modal').addClass('hidden'));
-
-      // Filter & Paging
+      // Data tab filter & sort
+      $('#refresh-btn').on('click', loadData);
+      $('#export-excel-btn').on('click', exportToExcel);
+      $('#export-pdf-btn').on('click', exportToPDF);
       $('#search-input').on('input', filterData);
-      $('#sort-tanggal').change(function(){ sortDirection = $(this).val(); sortData(); renderTable(); });
-      $('#filter-status').change(function(){ quickFilter='ALL'; filterData(); });
+      $('#filter-status').on('change', filterData);
       $('#filter-tanggal-awal, #filter-tanggal-akhir').on('change', filterData);
-      $('#prev-page').click(function(){ if(currentPage>1){ currentPage--; renderTable(); } });
-      $('#next-page').click(function(){ const totalPages = Math.ceil(filteredData.length/itemsPerPage); if(currentPage<totalPages){ currentPage++; renderTable(); } });
+      $('#sort-tanggal').on('change', function(){ sortColumn='tanggal'; sortDirection=$(this).val(); updateSortIndicators(); sortData(); renderTable(); });
+      $('#data-table thead').on('click', 'th.sortable', thSortHandler);
 
-      // Cek angsuran aktif saat NPK berubah
-      $('#npk').on('input blur', function(){
-        const npk = ($(this).val() || '').trim();
-        checkAngsuranOnInput(npk);
-      });
-
-      // Checkbox ack mengunci/lepaskan tombol submit
+      // Cek angsuran saat NPK diinput
+      $('#npk').on('input blur', function(){ checkAngsuranOnInput($(this).val().trim()); });
       $('#angsuran-ack-input').on('change', function(){
-        const checked = $(this).is(':checked');
-        toggleSubmitDisabled(!checked && !$('#angsuran-warning-input').hasClass('hidden'));
+        const needAck = !$('#angsuran-warning-input').hasClass('hidden');
+        toggleSubmitDisabled(!( $(this).is(':checked') || !needAck ));
       });
 
-      // Default sort
-      $('#sort-tanggal').val('asc');
+      // Vendor binding
+      $('#vendor-refresh-btn').on('click', () => { syncVendorFromAll(); renderVendorTable(); });
+      $('#vendor-export-excel-btn').on('click', exportVendorToExcel);
+      $('#vendor-export-pdf-btn').on('click', exportVendorToPDF);
+      $('#vendor-export-jpeg-btn').on('click', exportVendorToJPEG);
+      $('#vendor-search-input').on('input', filterVendor);
+      $('#vendor-sort-tanggal').on('change', filterVendor);
+      $('#vendor-filter-tipehp').on('change', filterVendor);
+      $('#vendor-filter-status').on('change', filterVendor);
+      $('#vendor-tanggal-awal, #vendor-tanggal-akhir').on('change', filterVendor);
+      $('#vendor-clear-filter').on('click', () => {
+        $('#vendor-search-input').val('');
+        $('#vendor-sort-tanggal').val('desc');
+        $('#vendor-filter-tipehp').val('');
+        $('#vendor-filter-status').val('');
+        $('#vendor-tanggal-awal').val('');
+        $('#vendor-tanggal-akhir').val('');
+        vendorFiltered = [...vendorData];
+        renderVendorTable();
+      });
 
-      // Load awal
+      // Settings
+      $('#refresh-all-btn').on('click', refreshAllData);
+
+      // Default
+      $('#sort-tanggal').val('asc');
+      updateSortIndicators();
       loadData();
     });
 
-    // ====== API LOAD ======
-    function loadData() {
-      showNotification('info','Memuat Data','Sedang mengambil data dari server...');
-      $.ajax({
-        url: ENDPOINT, type: 'GET', data: { action:'getAll' }, dataType:'json',
-        success: function(res){
-          if(res.status==='success'){
+    // ====== LOAD DATA ======
+    function loadData(){
+      showNotification('info','Memuat Data','Mengambil data dari server...');
+      $.getJSON(ENDPOINT, { action:'getAll' })
+        .done(res => {
+          if (res.status === 'success') {
             allData = res.data || [];
             filterData();
+            syncVendorFromAll();
             showNotification('success','Berhasil','Data berhasil dimuat');
-            // Recek NPK bila user sudah mengetik saat data baru datang
             const npk = ($('#npk').val() || '').trim();
             if (npk) checkAngsuranOnInput(npk);
           } else {
-            showNotification('error','Gagal', res.message || 'Terjadi kesalahan saat memuat data');
+            showNotification('error','Gagal', res.message || 'Kesalahan saat memuat data');
           }
-        },
-        error: function(){ showNotification('error','Kesalahan','Tidak dapat terhubung ke server'); }
-      });
+        })
+        .fail(() => showNotification('error','Kesalahan','Tidak dapat terhubung ke server'));
     }
 
     // ====== SUBMIT & UPDATE ======
     function submitForm(){
-      // Guard: kalau peringatan aktif & belum ack → blok
       if (!$('#angsuran-warning-input').hasClass('hidden') && !$('#angsuran-ack-input').is(':checked')) {
         showNotification('warning','Tindakan Diblokir','Centang "Saya paham, lanjutkan" sebelum menyimpan.');
         return;
       }
-
-      const formData = {
-        tanggal: $('#tanggal').val(), npk: $('#npk').val(), notelp: $('#notelp').val(),
-        cicilan: $('#cicilan').val(), tipehp: $('#tipehp').val(), alamat: $('#alamat').val(),
-        keterangan: $('#keterangan').val(), status: $('#status').val()
+      const data = {
+        tanggal: $('#tanggal').val(),
+        npk: $('#npk').val(),
+        notelp: $('#notelp').val(),
+        cicilan: $('#cicilan').val(),
+        tipehp: $('#tipehp').val(),
+        alamat: $('#alamat').val(),
+        keterangan: $('#keterangan').val(),
+        status: $('#status').val()
       };
-      showNotification('info','Menyimpan','Sedang menyimpan data...');
-      $.ajax({
-        url: ENDPOINT, type:'POST', data: formData, dataType:'json',
-        success: function(res){
-          if(res.status==='success'){
+      showNotification('info','Menyimpan','Mengirim data...');
+      $.post(ENDPOINT, data, null, 'json')
+        .done(res => {
+          if (res.status === 'success') {
             $('#input-form')[0].reset();
             hideAngsuranWarning();
             loadData();
-            showNotification('success','Berhasil','Data berhasil disimpan');
+            showNotification('success','Berhasil','Data disimpan');
           } else {
-            showNotification('error','Gagal', res.message || 'Terjadi kesalahan saat menyimpan data');
+            showNotification('error','Gagal', res.message || 'Kesalahan menyimpan data');
           }
-        },
-        error: function(){ showNotification('error','Kesalahan','Tidak dapat terhubung ke server'); }
-      });
+        })
+        .fail(()=>showNotification('error','Kesalahan','Tidak dapat terhubung ke server'));
     }
 
     function updateData(){
-      const formData = {
+      const data = {
         action:'updateData',
-        id: $('#edit-id').val(), row: $('#edit-row').val(),
-        tanggal: $('#edit-tanggal').val(), npk: $('#edit-npk').val(),
-        notelp: $('#edit-notelp').val(), cicilan: $('#edit-cicilan').val(),
-        tipehp: $('#edit-tipehp').val(), alamat: $('#edit-alamat').val(),
-        keterangan: $('#edit-keterangan').val(), status: $('#edit-status').val(),
-        stop_mulai: $('#edit-stop-mulai').val(), lanjut_mulai: $('#edit-lanjut-mulai').val()
+        id: $('#edit-id').val(),
+        row: $('#edit-row').val(),
+        tanggal: $('#edit-tanggal').val(),
+        npk: $('#edit-npk').val(),
+        notelp: $('#edit-notelp').val(),
+        cicilan: $('#edit-cicilan').val(),
+        tipehp: $('#edit-tipehp').val(),
+        alamat: $('#edit-alamat').val(),
+        keterangan: $('#edit-keterangan').val(),
+        status: $('#edit-status').val(),
+        stop_mulai: $('#edit-stop-mulai').val(),
+        lanjut_mulai: $('#edit-lanjut-mulai').val()
       };
-      showNotification('info','Memperbarui','Sedang memperbarui data...');
-      $.ajax({
-        url: ENDPOINT, type:'POST', data: formData, dataType:'json',
-        success: function(res){
-          if(res.status==='success'){ $('#edit-modal').addClass('hidden'); loadData(); showNotification('success','Berhasil','Data berhasil diperbarui'); }
-          else { showNotification('error','Gagal', res.message || 'Terjadi kesalahan saat memperbarui data'); }
-        },
-        error: function(){ showNotification('error','Kesalahan','Tidak dapat terhubung ke server'); }
-      });
+      showNotification('info','Memperbarui','Mengirim perubahan...');
+      $.post(ENDPOINT, data, null, 'json')
+        .done(res => {
+          if (res.status === 'success') {
+            $('#edit-modal').addClass('hidden');
+            loadData();
+            showNotification('success','Berhasil','Data diperbarui');
+          } else {
+            showNotification('error','Gagal', res.message || 'Kesalahan memperbarui data');
+          }
+        })
+        .fail(()=>showNotification('error','Kesalahan','Tidak dapat terhubung ke server'));
     }
 
     function refreshAllData(){
-      showNotification('info','Refresh','Sedang merefresh semua data...');
-      $.ajax({
-        url: ENDPOINT, type:'POST', data:{ action:'refreshAll' }, dataType:'json',
-        success: function(res){
-          if(res.status==='success'){ loadData(); showNotification('success','Berhasil', res.message || 'Data berhasil direfresh'); }
-          else { showNotification('error','Gagal', res.message || 'Terjadi kesalahan saat refresh data'); }
-        },
-        error: function(){ showNotification('error','Kesalahan','Tidak dapat terhubung ke server'); }
-      });
+      showNotification('info','Refresh','Memproses perhitungan ulang...');
+      $.post(ENDPOINT, { action:'refreshAll' }, null, 'json')
+        .done(res => {
+          if (res.status === 'success') { loadData(); showNotification('success','Berhasil', res.message || 'Data direfresh'); }
+          else { showNotification('error','Gagal', res.message || 'Kesalahan saat refresh'); }
+        })
+        .fail(()=>showNotification('error','Kesalahan','Tidak dapat terhubung ke server'));
     }
 
-    // ====== FILTERING & SORTING (Data tab) ======
-    function applyQuickFilter(type){
-      quickFilter = type;
-      $('#search-input').val('');
-      $('#filter-status').val('');
-      $('#filter-tanggal-awal').val('');
-      $('#filter-tanggal-akhir').val('');
-      filterData();
-      $('.tab-btn[data-tab="data"]').click();
-    }
-
+    // ====== FILTER, SORT & RENDER (DATA HP) ======
     function filterData(){
-      const searchTerm = ($('#search-input').val() || '').toLowerCase();
-      const statusSel = $('#filter-status').val();
-      const tglAwal = $('#filter-tanggal-awal').val();
-      const tglAkhir = $('#filter-tanggal-akhir').val();
+      const q = ($('#search-input').val() || '').toLowerCase();
+      const status = $('#filter-status').val();
+      const tAwal = $('#filter-tanggal-awal').val();
+      const tAkhir = $('#filter-tanggal-akhir').val();
 
-      filteredData = [...allData];
-
-      if (tglAwal) {
-        const awal = parseDate(tglAwal);
-        if (awal) filteredData = filteredData.filter(item => { const t = parseDate(item.tanggal); return t && t >= awal; });
-      }
-      if (tglAkhir) {
-        const akhir = parseDate(tglAkhir);
-        if (akhir) {
-          akhir.setHours(23, 59, 59, 999);
-          filteredData = filteredData.filter(item => { const t = parseDate(item.tanggal); return t && t <= akhir; });
+      filteredData = (allData || []).filter(item => {
+        // tanggal range
+        let ok = true;
+        if (tAwal) {
+          const a = parseDate(tAwal), t = parseDate(item.tanggal);
+          ok = ok && (!a || (t && t >= a));
         }
-      }
+        if (tAkhir) {
+          const b = parseDate(tAkhir); if (b) b.setHours(23,59,59,999);
+          const t = parseDate(item.tanggal);
+          ok = ok && (!b || (t && t <= b));
+        }
+        if (status) ok = ok && ((item.status || '') === status);
+        if (q) {
+          ok = ok && (
+            (item.npk||'').toLowerCase().includes(q) ||
+            (item.nama||'').toLowerCase().includes(q) ||
+            (item.notelp||'').toLowerCase().includes(q) ||
+            (item.tipehp||'').toLowerCase().includes(q) ||
+            (item.status||'').toLowerCase().includes(q) ||
+            (item.keterangan||'').toLowerCase().includes(q)
+          );
+        }
+        return ok;
+      });
 
-      if (!statusSel) {
-        if (quickFilter === 'OK') filteredData = filteredData.filter(x => (x.status || '') === 'OK');
-        else if (quickFilter === 'PROSES') filteredData = filteredData.filter(x => (x.status || '') === 'VERIFIKASI');
-        else if (quickFilter === 'ISSUES') filteredData = filteredData.filter(x => ['CANCEL','NO ACC'].includes(x.status || ''));
-      }
-      if (statusSel) filteredData = filteredData.filter(x => (x.status || '') === statusSel);
-
-      if (searchTerm){
-        filteredData = filteredData.filter(item => (
-          (item.npk || '').toLowerCase().includes(searchTerm) ||
-          (item.nama || '').toLowerCase().includes(searchTerm) ||
-          (item.notelp || '').toLowerCase().includes(searchTerm) ||
-          (item.tipehp || '').toLowerCase().includes(searchTerm) ||
-          (item.status || '').toLowerCase().includes(searchTerm) ||
-          (item.keterangan || '').toLowerCase().includes(searchTerm)
-        ));
-      }
-
-      currentPage = 1;
       sortData();
       renderTable();
       updateDashboardCounters();
     }
 
+    function getSortValue(it, col){
+      switch(col){
+        case 'id':     return parseInt(it.id || it.row || 0, 10) || 0;
+        case 'tanggal':return parseDate(it.tanggal) || new Date(0);
+        case 'npk':    return (it.npk || '').toString().toLowerCase();
+        case 'nama':   return (it.nama || '').toString().toLowerCase();
+        case 'notelp': return (it.notelp || '').toString().toLowerCase();
+        case 'tipehp': return (it.tipehp || '').toString().toLowerCase();
+        case 'cicilan':return parseInt(it.cicilan || 0, 10) || 0;
+        case 'status': return (it.status || '').toString().toLowerCase();
+        case 'masa': {
+          const p = parseMasaCicilan(it.masaCicilan || '');
+          return (p && p.tot) ? (p.cur / p.tot) : -1;
+        }
+        default: return '';
+      }
+    }
+
     function sortData(){
       filteredData.sort((a,b)=>{
-        let A = a[sortColumn] || '', B = b[sortColumn] || '';
-        if (sortColumn==='tanggal'){ A = parseDate(A); B = parseDate(B); }
-        if (sortColumn==='cicilan'){ A = parseInt(A)||0; B = parseInt(B)||0; }
-        if (A<B) return sortDirection==='asc' ? -1 : 1;
-        if (A>B) return sortDirection==='asc' ? 1 : -1;
+        const A = getSortValue(a, sortColumn);
+        const B = getSortValue(b, sortColumn);
+        if (A < B) return sortDirection==='asc' ? -1 : 1;
+        if (A > B) return sortDirection==='asc' ? 1 : -1;
         return 0;
       });
     }
 
-    function renderTable(){
-      const start = (currentPage-1)*itemsPerPage;
-      const pageData = filteredData.slice(start, start+itemsPerPage);
-      const tbody = $('#data-table tbody');
-      tbody.empty();
+    function updateSortIndicators(){
+      $('#data-table th.sortable').attr('aria-sort', 'none');
+      $('#data-table th.sortable').each(function(){
+        const col = $(this).data('col');
+        if (col === sortColumn){
+          $(this).attr('aria-sort', sortDirection === 'asc' ? 'ascending' : 'descending');
+        }
+      });
+    }
 
-      if(pageData.length===0){
-        tbody.append('<tr><td colspan="10" class="px-4 py-4 text-center text-gray-500">Tidak ada data yang tersedia</td></tr>');
+    function thSortHandler(){
+      const col = $(this).data('col');
+      if (!col) return;
+      if (sortColumn === col) {
+        sortDirection = (sortDirection === 'asc') ? 'desc' : 'asc';
       } else {
-        pageData.forEach(item=>{
-          const waLink = item.notelp_link
-            ? `<a href="${item.notelp_link}" target="_blank" rel="noopener noreferrer" class="whatsapp-link hover:underline">${item.notelp||''}</a>`
-            : (item.notelp||'');
+        sortColumn = col;
+        sortDirection = (col === 'tanggal') ? $('#sort-tanggal').val() : 'asc';
+      }
+      if (col === 'tanggal') $('#sort-tanggal').val(sortDirection);
+      updateSortIndicators();
+      sortData();
+      renderTable();
+    }
+
+    function renderTable(){
+      const $tbody = $('#data-table tbody').empty();
+
+      if (!filteredData.length){
+        $tbody.append('<tr><td colspan="10" class="px-4 py-4 text-center text-gray-500">Tidak ada data yang tersedia</td></tr>');
+      } else {
+        filteredData.forEach(item=>{
+          const phoneDigits = (item.notelp || '').toString().replace(/\D/g,'');
+          const waLink = phoneDigits
+            ? `<a href="https://wa.me/${phoneDigits}" target="_blank" rel="noopener noreferrer" class="whatsapp-link hover:underline">${item.notelp || ''}</a>`
+            : (item.notelp || '');
 
           let statusBadge = '';
           if (item.status==='OK') statusBadge = '<span class="badge badge-go"><i class="fas fa-check-circle"></i> OK</span>';
@@ -700,14 +824,13 @@
           else if (item.status==='VERIFIKASI') statusBadge = '<span class="badge" style="background:#fef3c7;color:#92400e"><i class="fas fa-exclamation-circle"></i> VERIFIKASI</span>';
           else statusBadge = '<span class="badge" style="background:#f3f4f6;color:#4b5563"><i class="fas fa-question-circle"></i> -</span>';
 
-          const masa = (()=>{
+          const masa = (()=> {
             if (!item.masaCicilan) return '<div class="text-sm text-gray-500">-</div>';
             const p = parseMasaCicilan(item.masaCicilan);
             const cur = p.cur ?? 0, tot = p.tot ?? 0;
             const perc = tot>0 ? Math.min(100, Math.round((cur/tot)*100)) : 0;
             const warnIcon = (p.cur!==null && p.tot!==null && cur < tot)
-              ? '<i class="fas fa-triangle-exclamation ml-2 text-yellow-500" title="Masih ada angsuran"></i>'
-              : '';
+              ? '<i class="fas fa-triangle-exclamation ml-2 text-yellow-500" title="Masih ada angsuran"></i>' : '';
             return `<div class="text-sm flex items-center">${item.masaCicilan}${warnIcon}</div>
                     <div class="progress-wrap mt-1"><div class="progress-bar" style="width:${perc}%"></div></div>`;
           })();
@@ -728,212 +851,154 @@
               </button>
             </td>
           </tr>`;
-          tbody.append(tr);
+          $tbody.append(tr);
         });
 
-        $('.edit-btn').click(function(){ editData($(this).data('id'), $(this).data('row')); });
+        // Bind edit buttons
+        $('.edit-btn').on('click', function(){ editData($(this).data('id'), $(this).data('row')); });
       }
 
-      $('#showing-count').text(pageData.length);
-      $('#total-count').text(filteredData.length);
-      const totalPages = Math.ceil(filteredData.length/itemsPerPage) || 1;
-      $('#page-info').text(`Halaman ${currentPage} dari ${totalPages}`);
-      $('#prev-page').prop('disabled', currentPage===1);
-      $('#next-page').prop('disabled', currentPage===totalPages || totalPages===0);
+      $('#showing-count').text(filteredData.length);
+      $('#total-count').text(allData.length);
     }
 
     function editData(id,row){
-      const item = allData.find(d => (d.id && d.id==id) || (d.row && d.row==row));
-      if (!item) return;
-      $('#edit-id').val(item.id || '');
-      $('#edit-row').val(item.row || '');
-      $('#edit-tanggal').val(item.tanggal || '');
-      $('#edit-npk').val(item.npk || '');
-      $('#edit-notelp').val(item.notelp || '');
-      $('#edit-cicilan').val(item.cicilan || '');
-      $('#edit-tipehp').val(item.tipehp || '');
-      $('#edit-alamat').val(item.alamat || '');
-      $('#edit-keterangan').val(item.keterangan || '');
-      $('#edit-status').val(item.status || '');
-      $('#edit-stop-mulai').val(item.stopMulai || '');
-      $('#edit-lanjut-mulai').val(item.lanjutMulai || '');
+      const it = allData.find(d => (d.id && d.id==id) || (d.row && d.row==row));
+      if (!it) return;
+      $('#edit-id').val(it.id || '');
+      $('#edit-row').val(it.row || '');
+      $('#edit-tanggal').val(it.tanggal || '');
+      $('#edit-npk').val(it.npk || '');
+      $('#edit-notelp').val(it.notelp || '');
+      $('#edit-cicilan').val(it.cicilan || '');
+      $('#edit-tipehp').val(it.tipehp || '');
+      $('#edit-alamat').val(it.alamat || '');
+      $('#edit-keterangan').val(it.keterangan || '');
+      $('#edit-status').val(it.status || '');
+      $('#edit-stop-mulai').val(it.stopMulai || '');
+      $('#edit-lanjut-mulai').val(it.lanjutMulai || '');
       $('#edit-modal').removeClass('hidden');
     }
 
     // ====== DASHBOARD ======
     function updateDashboardCounters(){
-      const total = allData.length;
-      const ok = allData.filter(x => x.status==='OK').length;
-      const proses = allData.filter(x => x.status==='VERIFIKASI').length;
-      const issues = allData.filter(x => ['CANCEL','NO ACC'].includes(x.status||'')).length;
-      $('#total-hp').text(total);
-      $('#status-ok').text(ok);
-      $('#status-proses').text(proses);
-      $('#status-issues').text(issues);
+      $('#total-hp').text(allData.length);
+      $('#status-ok').text(allData.filter(x => x.status==='OK').length);
+      $('#status-proses').text(allData.filter(x => x.status==='VERIFIKASI').length);
+      $('#status-issues').text(allData.filter(x => ['CANCEL','NO ACC'].includes(x.status||'')).length);
     }
 
     function loadDashboard(){
       updateDashboardCounters();
-
       const tipeHpCounts = {};
       const statusCounts = { 'OK':0, 'CANCEL':0, 'NO ACC':0, 'VERIFIKASI':0, 'Lainnya':0 };
-      allData.forEach(item=>{
-        if (item.tipehp){ tipeHpCounts[item.tipehp] = (tipeHpCounts[item.tipehp]||0)+1; }
-        if (['OK','CANCEL','NO ACC','VERIFIKASI'].includes(item.status)){
-          statusCounts[item.status] = (statusCounts[item.status]||0)+1;
-        } else {
-          statusCounts['Lainnya'] = (statusCounts['Lainnya']||0)+1;
-        }
+
+      allData.forEach(it=>{
+        if (it.tipehp) tipeHpCounts[it.tipehp] = (tipeHpCounts[it.tipehp]||0)+1;
+        if (['OK','CANCEL','NO ACC','VERIFIKASI'].includes(it.status)) statusCounts[it.status] = (statusCounts[it.status]||0)+1;
+        else statusCounts['Lainnya'] = (statusCounts['Lainnya']||0)+1;
       });
 
-      const tipeHpCtx = document.getElementById('tipe-hp-chart').getContext('2d');
+      const ctx1 = document.getElementById('tipe-hp-chart').getContext('2d');
       if (tipeHpChart) tipeHpChart.destroy();
-      tipeHpChart = new Chart(tipeHpCtx, {
+      tipeHpChart = new Chart(ctx1, {
         type:'bar',
-        data:{ labels:Object.keys(tipeHpCounts),
-               datasets:[{ label:'Jumlah HP', data:Object.values(tipeHpCounts),
-               backgroundColor:'rgba(245, 158, 11, 0.7)', borderColor:'rgba(245, 158, 11, 1)', borderWidth:1 }] },
+        data:{ labels:Object.keys(tipeHpCounts), datasets:[{ label:'Jumlah HP', data:Object.values(tipeHpCounts), backgroundColor:'rgba(245, 158, 11, 0.7)', borderColor:'rgba(245,158,11,1)', borderWidth:1 }] },
         options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
       });
 
-      const statusCtx = document.getElementById('status-chart').getContext('2d');
+      const ctx2 = document.getElementById('status-chart').getContext('2d');
       if (statusChart) statusChart.destroy();
-      const colors = ['rgba(34,197,94,.7)','rgba(239,68,68,.7)','rgba(239,68,68,.7)','rgba(245,158,11,.7)','rgba(156,163,175,.7)'];
-      statusChart = new Chart(statusCtx, {
+      const baseColors = ['#22c55e','#ef4444','#ef4444','#f59e0b','#9ca3af'];
+      statusChart = new Chart(ctx2, {
         type:'doughnut',
-        data:{ labels:Object.keys(statusCounts), datasets:[{ data:Object.values(statusCounts), backgroundColor:colors, borderColor:colors.map(c=>c.replace('.7', '')), borderWidth:1 }] },
+        data:{ labels:Object.keys(statusCounts), datasets:[{ data:Object.values(statusCounts), backgroundColor:baseColors, borderColor:baseColors, borderWidth:1 }] },
         options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } }
       });
     }
 
-    // ====== EXPORT ======
-    // DETEKSI Android WebView
+    // ====== EXPORT (DATA HP) ======
     function isAndroidWebView(){
       const ua = navigator.userAgent || '';
       return /Android/i.test(ua) && /wv|Version\/\d+\.\d+ Chrome\/\d+.*Mobile Safari\/\d+/i.test(ua);
     }
 
-    // Fallback download yang aman untuk WebView (hindari blob:)
-    async function downloadBlob(blob, fileName){
-      // 1) Browser normal + FileSaver
-      try {
-        if (typeof saveAs === 'function' && !isAndroidWebView()){
-          saveAs(blob, fileName);
-          return;
-        }
-      } catch(e) { /* lanjut ke fallback */ }
-
-      // 2) Fallback utama (Android WebView): ubah ke Data URL (base64)
+    async function downloadBlob(blob, name){
+      try { if (typeof saveAs === 'function' && !isAndroidWebView()) { saveAs(blob, name); return; } } catch(e){}
       try {
         const dataUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
+          const r = new FileReader(); r.onloadend = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(blob);
         });
-
-        // Gunakan anchor dengan download bila didukung
         const a = document.createElement('a');
-        if ('download' in a){
-          a.href = dataUrl;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          return;
-        }
-
-        // 3) Last resort: navigasi ke data URL (user bisa Save As)
-        window.location.href = dataUrl;
-        return;
+        if ('download' in a){ a.href = dataUrl; a.download = name; document.body.appendChild(a); a.click(); a.remove(); return; }
+        window.location.href = dataUrl; return;
       } catch(err) {
-        // 4) Paling akhir: objectURL (mungkin memicu blob:, tapi kita coba)
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
         setTimeout(()=>URL.revokeObjectURL(url), 1500);
       }
     }
 
     async function exportToExcel(){
-      if (!filteredData.length){ showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
+      if (!filteredData.length) { showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
+      showNotification('info','Ekspor','Menyiapkan Excel...');
+      const tA = $('#filter-tanggal-awal').val() || 'Awal';
+      const tB = $('#filter-tanggal-akhir').val() || 'Akhir';
+      const sF = $('#filter-status').val() || 'Semua';
+      const d = new Date(); const ds = `${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()}`;
+      const name = `Data_HP_${tA.replace(/\//g,'')}_${tB.replace(/\//g,'')}_${sF}_${ds}.xlsx`;
 
-      showNotification('info','Ekspor','Menyiapkan file Excel...');
-      const tglAwal = $('#filter-tanggal-awal').val() || 'Awal';
-      const tglAkhir = $('#filter-tanggal-akhir').val() || 'Akhir';
-      const statusFilter = $('#filter-status').val() || 'Semua';
-      const d = new Date();
-      const dateStr = `${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()}`;
-      const fileName = `Data_HP_${tglAwal.replace(/\//g,'')}_${tglAkhir.replace(/\//g,'')}_${statusFilter}_${dateStr}.xlsx`;
-
-      const exportData = filteredData.map(item=>({
-        'ID': item.id || item.row || '',
-        'Tanggal': item.tanggal || '',
-        'NPK': item.npk || '',
-        'Nama': item.nama || '',
-        'No. Telp': item.notelp || '',
-        'Instalasi': item.instalasi || '',
-        'Cicilan': item.cicilan || '',
-        'Tipe HP': item.tipehp || '',
-        'Alamat Kirim': item.alamat || '',
-        'Keterangan': item.keterangan || '',
-        'Status': item.status || '',
-        'Masa Cicilan': item.masaCicilan || '',
-        'Stop Mulai': item.stopMulai || '',
-        'Lanjut Mulai': item.lanjutMulai || ''
+      const rows = filteredData.map(it=>({
+        'ID': it.id || it.row || '',
+        'Tanggal': it.tanggal || '',
+        'NPK': it.npk || '',
+        'Nama': it.nama || '',
+        'No. Telp': it.notelp || '',
+        'Instalasi': it.instalasi || '',
+        'Cicilan': it.cicilan || '',
+        'Tipe HP': it.tipehp || '',
+        'Alamat Kirim': it.alamat || '',
+        'Keterangan': it.keterangan || '',
+        'Status': it.status || '',
+        'Masa Cicilan': it.masaCicilan || '',
+        'Stop Mulai': it.stopMulai || '',
+        'Lanjut Mulai': it.lanjutMulai || ''
       }));
 
       const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(exportData);
+      const ws = XLSX.utils.json_to_sheet(rows);
       XLSX.utils.book_append_sheet(wb, ws, 'Data HP');
-
       const ab = XLSX.write(wb, { bookType:'xlsx', type:'array' });
-      const blob = new Blob([ab], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      await downloadBlob(blob, fileName);
-      showNotification('success','Berhasil','Excel berhasil dibuat.');
+      await downloadBlob(new Blob([ab], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
+      showNotification('success','Berhasil','Excel dibuat.');
     }
 
     async function exportToPDF(){
-      if (!filteredData.length){ showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
-
-      showNotification('info','Ekspor','Menyiapkan file PDF...');
-      const tglAwal = $('#filter-tanggal-awal').val() || 'Awal';
-      const tglAkhir = $('#filter-tanggal-akhir').val() || 'Akhir';
-      const statusFilter = $('#filter-status').val() || 'Semua';
-
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      doc.setFontSize(18);
-      doc.text('Data HP Karyawan', 105, 15, { align:'center' });
+      if (!filteredData.length) { showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
+      showNotification('info','Ekspor','Menyiapkan PDF...');
+      const tA = $('#filter-tanggal-awal').val() || 'Awal';
+      const tB = $('#filter-tanggal-akhir').val() || 'Akhir';
+      const sF = $('#filter-status').val() || 'Semua';
+      const { jsPDF } = window.jspdf; const doc = new jsPDF();
+      doc.setFontSize(18); doc.text('Data HP Karyawan', 105, 15, { align:'center' });
       doc.setFontSize(10);
-      const d = new Date();
-      const ds = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+      const d = new Date(); const ds = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
       doc.text(`Tanggal: ${ds}`, 105, 25, { align:'center' });
-      doc.text(`Periode: ${tglAwal} - ${tglAkhir}`, 105, 30, { align:'center' });
-      doc.text(`Status: ${statusFilter}`, 105, 35, { align:'center' });
+      doc.text(`Periode: ${tA} - ${tB}`, 105, 30, { align:'center' });
+      doc.text(`Status: ${sF}`, 105, 35, { align:'center' });
 
-      const tableData = filteredData.map(item=>[
-        item.id||item.row||'', item.tanggal||'', item.npk||'', item.nama||'', item.notelp||'',
-        item.cicilan||'', item.tipehp||'', item.status||'', item.masaCicilan||'-'
+      const body = filteredData.map(it=>[
+        it.id||it.row||'', it.tanggal||'', it.npk||'', it.nama||'', it.notelp||'',
+        it.cicilan||'', it.tipehp||'', it.status||'', it.masaCicilan||'-'
       ]);
-
       doc.autoTable({
         head:[['ID','Tanggal','NPK','Nama','No. Telp','Cicilan','Tipe HP','Status','Masa Cicilan']],
-        body: tableData,
-        startY:40,
-        styles:{ fontSize:8, cellPadding:3 },
-        headStyles:{ fillColor:[245,158,11], textColor:255 }
+        body, startY:40, styles:{ fontSize:8, cellPadding:3 }, headStyles:{ fillColor:[245,158,11], textColor:255 }
       });
 
-      const safeName = `Data_HP_${tglAwal.replace(/\//g,'')}_${tglAkhir.replace(/\//g,'')}_${statusFilter}_${ds.replaceAll('/','')}.pdf`;
-      const blob = doc.output('blob');
-      await downloadBlob(blob, safeName);
-      showNotification('success','Berhasil','PDF berhasil dibuat.');
+      const safe = `Data_HP_${tA.replace(/\//g,'')}_${tB.replace(/\//g,'')}_${sF}_${ds.replaceAll('/','')}.pdf`;
+      await downloadBlob(doc.output('blob'), safe);
+      showNotification('success','Berhasil','PDF dibuat.');
     }
 
     // ====== UTIL ======
@@ -949,55 +1014,33 @@
       setTimeout(()=>n.addClass('translate-y-20 opacity-0'), 5000);
     }
 
-    function parseDate(dateStr){
-      if(!dateStr) return null;
-      const p = String(dateStr).split('/');
-      if(p.length!==3) return null;
+    function parseDate(s){
+      if(!s) return null; const p = String(s).split('/'); if(p.length!==3) return null;
       return new Date(parseInt(p[2],10), parseInt(p[1],10)-1, parseInt(p[0],10));
     }
 
-    function parseMasaCicilan(masaStr){
-      if (!masaStr) return {cur:null, tot:null};
-      const m = String(masaStr).trim().match(/^(\d+)\s*\/\s*(\d+)$/);
+    function parseMasaCicilan(s){
+      if (!s) return {cur:null, tot:null};
+      const m = String(s).trim().match(/^(\d+)\s*\/\s*(\d+)$/);
       if (!m) return {cur:null, tot:null};
-      const cur = parseInt(m[1], 10);
-      const tot = parseInt(m[2], 10);
-      if (isNaN(cur) || isNaN(tot)) return {cur:null, tot:null};
-      return {cur, tot};
+      return {cur:parseInt(m[1],10), tot:parseInt(m[2],10)};
     }
 
     function checkAngsuranOnInput(npk){
-      const warn = $('#angsuran-warning-input');
-      const list = $('#angsuran-list');
-      const ack = $('#angsuran-ack-input');
-
+      const warn = $('#angsuran-warning-input'), list = $('#angsuran-list'), ack = $('#angsuran-ack-input');
       if (!npk) { hideAngsuranWarning(); return; }
-
-      // Cari entri NPK dengan masaCicilan cur<tot dan status bukan CANCEL/NO ACC
-      const aktif = (allData || []).filter(d => {
+      const aktif = (allData||[]).filter(d=>{
         if (!d || (String(d.npk||'').trim() !== npk)) return false;
         const {cur, tot} = parseMasaCicilan(d.masaCicilan || '');
         if (cur===null || tot===null) return false;
-        const status = (d.status || '').toUpperCase();
-        const statusOk = !['CANCEL','NO ACC'].includes(status);
-        return statusOk && cur < tot;
+        const st = (d.status || '').toUpperCase();
+        return !['CANCEL','NO ACC'].includes(st) && cur < tot;
       });
-
-      if (aktif.length > 0){
-        // Tampilkan list ringkas
-        const rows = aktif.slice(0,5).map(a=>{
-          const masa = a.masaCicilan || '-';
-          const tgl = a.tanggal || '-';
-          const tipe = a.tipehp || '-';
-          return `<div>• ${masa} – ${tipe} (Tgl: ${tgl})</div>`;
-        }).join('');
+      if (aktif.length){
+        const rows = aktif.slice(0,5).map(a=>`<div>• ${a.masaCicilan||'-'} – ${a.tipehp||'-'} (Tgl: ${a.tanggal||'-'})</div>`).join('');
         list.html(rows + (aktif.length>5 ? `<div class="italic">+ ${aktif.length-5} data lagi...</div>` : ''));
-        warn.removeClass('hidden');
-        ack.prop('checked', false);
-        toggleSubmitDisabled(true); // kunci submit
-      } else {
-        hideAngsuranWarning();
-      }
+        warn.removeClass('hidden'); ack.prop('checked', false); toggleSubmitDisabled(true);
+      } else { hideAngsuranWarning(); }
     }
 
     function hideAngsuranWarning(){
@@ -1006,10 +1049,163 @@
       toggleSubmitDisabled(false);
     }
 
-    function toggleSubmitDisabled(disabled){
-      const btn = $('#btn-submit');
-      btn.prop('disabled', disabled);
-      btn.toggleClass('opacity-50 cursor-not-allowed', disabled);
+    function toggleSubmitDisabled(dis){
+      $('#btn-submit').prop('disabled', dis).toggleClass('opacity-50 cursor-not-allowed', dis);
+    }
+
+    // ====== VENDOR ======
+    function syncVendorFromAll(){
+      vendorData = (allData||[]).map(x=>({
+        tanggal:x.tanggal||'', npk:x.npk||'', nama:x.nama||'', notelp:x.notelp||'',
+        tipehp:x.tipehp||'', status:x.status||'', alamat:x.alamat||''
+      }));
+      vendorFiltered = [...vendorData];
+    }
+
+    function filterVendor(){
+      const q = ($('#vendor-search-input').val() || '').toLowerCase();
+      const tAwal = $('#vendor-tanggal-awal').val();
+      const tAkhir = $('#vendor-tanggal-akhir').val();
+      const tipe = $('#vendor-filter-tipehp').val();
+      const stat = ($('#vendor-filter-status').val() || '').toUpperCase();
+      const dir = $('#vendor-sort-tanggal').val() || 'desc';
+
+      vendorFiltered = vendorData.filter(r=>{
+        let ok = true;
+        if (tAwal){ const a = parseDate(tAwal), t = parseDate(r.tanggal); ok = ok && (!a || (t && t >= a)); }
+        if (tAkhir){ const b = parseDate(tAkhir); if (b) b.setHours(23,59,59,999); const t = parseDate(r.tanggal); ok = ok && (!b || (t && t <= b)); }
+        if (tipe) {
+          const tp = (r.tipehp||'').toUpperCase();
+          ok = ok && (tipe==='LAINNYA' ? tp==='LAINNYA' : tp.includes(tipe));
+        }
+        if (stat) ok = ok && ((r.status||'').toUpperCase() === stat);
+        if (q) ok = ok && ( (r.npk||'').toLowerCase().includes(q) || (r.nama||'').toLowerCase().includes(q) ||
+                            (r.notelp||'').toLowerCase().includes(q) || (r.tipehp||'').toLowerCase().includes(q) ||
+                            (r.alamat||'').toLowerCase().includes(q) || (r.tanggal||'').toLowerCase().includes(q) ||
+                            (r.status||'').toLowerCase().includes(q) );
+        return ok;
+      });
+
+      vendorFiltered.sort((a,b)=>{
+        const A = parseDate(a.tanggal) || new Date(0);
+        const B = parseDate(b.tanggal) || new Date(0);
+        if (A < B) return dir==='asc' ? -1 : 1;
+        if (A > B) return dir==='asc' ? 1 : -1;
+        return 0;
+      });
+
+      renderVendorTable();
+    }
+
+    function renderVendorTable(){
+      const $tb = $('#vendor-table tbody').empty();
+      if (!vendorFiltered.length){
+        $tb.append('<tr><td colspan="7" class="px-4 py-4 text-center text-gray-500">Tidak ada data</td></tr>');
+      } else {
+        vendorFiltered.forEach(r=>{
+          const digits = (r.notelp||'').toString().replace(/\D/g,'');
+          const waLink = digits ? `<a href="https://wa.me/${digits}" target="_blank" rel="noopener noreferrer" class="whatsapp-link hover:underline">${r.notelp||''}</a>` : (r.notelp||'');
+          let statusBadge = '';
+          if (r.status==='OK') statusBadge = '<span class="badge badge-go"><i class="fas fa-check-circle"></i> OK</span>';
+          else if (['CANCEL','NO ACC'].includes(r.status)) statusBadge = `<span class="badge badge-stop"><i class="fas fa-times-circle"></i> ${r.status}</span>`;
+          else if (r.status==='VERIFIKASI') statusBadge = '<span class="badge" style="background:#fef3c7;color:#92400e"><i class="fas fa-exclamation-circle"></i> VERIFIKASI</span>';
+          else statusBadge = '<span class="badge" style="background:#f3f4f6;color:#4b5563"><i class="fas fa-question-circle"></i> -</span>';
+
+          $tb.append(`<tr>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.tanggal}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.npk}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.nama}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${waLink}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.tipehp}</td>
+            <td class="px-2 md:px-4 py-3 text-sm">${statusBadge}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.alamat || '-'}</td>
+          </tr>`);
+        });
+      }
+      $('#vendor-showing-count').text(vendorFiltered.length);
+      $('#vendor-total-count').text(vendorData.length);
+    }
+
+    async function exportVendorToExcel(){
+      if (!vendorFiltered.length){ showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
+      showNotification('info','Ekspor','Menyiapkan Excel (vendor)...');
+      const tA = $('#vendor-tanggal-awal').val() || 'Awal';
+      const tB = $('#vendor-tanggal-akhir').val() || 'Akhir';
+      const tipe = $('#vendor-filter-tipehp').val() || 'Semua';
+      const stat = $('#vendor-filter-status').val() || 'Semua';
+      const d = new Date(); const ds = `${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()}`;
+      const name = `Vendor_HP_${tA.replace(/\//g,'')}_${tB.replace(/\//g,'')}_${tipe}_${stat}_${ds}.xlsx`;
+
+      const rows = vendorFiltered.map(r=>({
+        'Tanggal': r.tanggal, 'NPK': r.npk, 'Nama': r.nama, 'No. Telp': r.notelp, 'Tipe': r.tipehp, 'Status': r.status, 'Alamat Kirim': r.alamat
+      }));
+      const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, 'Vendor');
+      const ab = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+      await downloadBlob(new Blob([ab], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
+      showNotification('success','Berhasil','Excel vendor dibuat.');
+    }
+
+    async function exportVendorToPDF(){
+      if (!vendorFiltered.length){ showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
+      showNotification('info','Ekspor','Menyiapkan PDF (vendor)...');
+      const { jsPDF } = window.jspdf; const doc = new jsPDF();
+      doc.setFontSize(16); doc.text('Data HP - Vendor (Semua Data)', 105, 15, { align:'center' });
+      doc.setFontSize(10);
+      const d = new Date(); const ds = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+      const tA = $('#vendor-tanggal-awal').val() || 'Awal';
+      const tB = $('#vendor-tanggal-akhir').val() || 'Akhir';
+      const tipe = $('#vendor-filter-tipehp').val() || 'Semua';
+      const stat = $('#vendor-filter-status').val() || 'Semua';
+      doc.text(`Tanggal cetak: ${ds}`, 105, 22, { align:'center' });
+      doc.text(`Periode: ${tA} - ${tB}`, 105, 27, { align:'center' });
+      doc.text(`Tipe HP: ${tipe} | Status: ${stat}`, 105, 32, { align:'center' });
+
+      const body = vendorFiltered.map(r => [r.tanggal, r.npk, r.nama, r.notelp, r.tipehp, r.status, r.alamat]);
+      doc.autoTable({ head: [['Tanggal','NPK','Nama','No. Telp','Tipe','Status','Alamat Kirim']], body, startY: 37, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [245,158,11], textColor: 255 } });
+      const safe = `Vendor_HP_${tA.replace(/\//g,'')}_${tB.replace(/\//g,'')}_${tipe}_${stat}_${ds.replaceAll('/','')}.pdf`;
+      await downloadBlob(doc.output('blob'), safe);
+      showNotification('success','Berhasil','PDF vendor dibuat.');
+    }
+
+    async function exportVendorToJPEG(){
+      if (!vendorFiltered.length){ showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
+      showNotification('info','Ekspor','Menyiapkan JPEG (vendor)...');
+
+      const cont = document.createElement('div');
+      cont.className = 'vendor-capture-container';
+      cont.style.width = '1000px';
+      const title = document.createElement('div'); title.className='vendor-capture-title'; title.textContent='Data HP - Vendor (Semua Data)';
+      const info = document.createElement('div'); info.className='vendor-capture-date';
+      const d = new Date(); const ds = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+      const tA = $('#vendor-tanggal-awal').val() || 'Awal';
+      const tB = $('#vendor-tanggal-akhir').val() || 'Akhir';
+      const tipe = $('#vendor-filter-tipehp').val() || 'Semua';
+      const stat = $('#vendor-filter-status').val() || 'Semua';
+      info.textContent = `Tanggal: ${ds} | Periode: ${tA} - ${tB} | Tipe HP: ${tipe} | Status: ${stat}`;
+
+      const table = document.getElementById('vendor-table').cloneNode(true);
+      table.style.width = '100%'; table.style.borderCollapse = 'collapse'; table.style.fontSize = '12px';
+
+      const style = document.createElement('style');
+      style.textContent = `table th, table td { border:1px solid #ddd; padding:8px; text-align:left; }
+                           table th { background:#f2f2f2; font-weight:bold; } table tr:nth-child(even){ background:#f9f9f9; }`;
+      cont.appendChild(title); cont.appendChild(info); cont.appendChild(style); cont.appendChild(table);
+      document.body.appendChild(cont);
+
+      try{
+        const canvas = await html2canvas(cont, { scale: 2, logging:false, useCORS:true });
+        canvas.toBlob(async blob => {
+          document.body.removeChild(cont);
+          const file = `Vendor_HP_${tA.replace(/\//g,'')}_${tB.replace(/\//g,'')}_${tipe}_${stat}_${ds.replaceAll('/','')}.jpg`;
+          await downloadBlob(blob, file);
+          showNotification('success','Berhasil','JPEG vendor dibuat.');
+        }, 'image/jpeg', 0.9);
+      } catch(e) {
+        document.body.removeChild(cont);
+        console.error(e);
+        showNotification('error','Gagal','Kesalahan saat membuat JPEG');
+      }
     }
   </script>
 </body>
