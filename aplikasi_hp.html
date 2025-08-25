@@ -530,9 +530,13 @@
 
   <script>
     // =================================== KONFIGURASI APLIKASI ===================================
-    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxWufKKeP8iZ57Gj3aC7wffIW114F17IFEkY_8z3x43z63JjjcmHKohHBJs6kkm2jlW/exec';
-    const PRICE_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwWV5IzmMkY6KnwwMutRWqfgTyi00wj0eeGodhjFzaoaA7ZNlDT_emjEkD12Ojf0vdr/exec';
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzfADC35kj6zXB9cH2ilyZtnvLV060wnB-ZECOzlnbW83XTgopFc_-JMFp9L-xjr1gj/exec';
+    const PRICE_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzu40FgK2o8iCSTN9r1lBWhSy84wkLbqo_9vtIP-L6qbPG-KIkRf22BIkL5mVFgxvnRIQ/exec';
 
+    // Dynamic vendor labels (loaded from PRICE_ENDPOINT)
+    let VENDOR_LABEL_ALF = 'Alfacell';
+    let VENDOR_LABEL_SA  = 'Sentral Abadi Jaya';
+    
     // =================================== PENGECEKAN AKSES ADMIN ===================================
     (function enforceAdmin(){
       const qsUser = new URLSearchParams(location.search).get('user') || '';
@@ -768,7 +772,27 @@
                    : Array.isArray(json)        ? json
                    : [];
 
-        vendorPrices = { alfacell: [], sentral: [] };
+        
+        // Pick up vendor labels if provided by API
+        try {
+          const vl = json?.vendorLabels || json?.vendorlabels || null;
+          if (vl) {
+            if (vl.name_alf) VENDOR_LABEL_ALF = String(vl.name_alf);
+            if (vl.name_sa)  VENDOR_LABEL_SA  = String(vl.name_sa);
+          } else {
+            // Fallback: try querying config endpoint to fetch labels
+            try {
+              const resCfg = await fetch(PRICE_ENDPOINT + (PRICE_ENDPOINT.includes('?') ? '&' : '?') + 'action=config', { cache:'no-store' });
+              const cfg = await resCfg.json();
+              const vendors = cfg?.vendors || cfg?.data?.vendors || null;
+              if (vendors) {
+                if (vendors.name_alf) VENDOR_LABEL_ALF = String(vendors.name_alf);
+                if (vendors.name_sa)  VENDOR_LABEL_SA  = String(vendors.name_sa);
+              }
+            } catch (e) { /* silent */ }
+          }
+        } catch(e){ /* ignore labels error */ }
+    vendorPrices = { alfacell: [], sentral: [] };
         rows.forEach(r=>{
           const tipe  = String(r['tipe'] || r['TIPE BARANG'] || '').trim();
           const merek = String(r['merek'] || r['MEREK'] || '').trim().toUpperCase();
@@ -913,7 +937,7 @@
         $tbody.append('<tr><td colspan="10" class="px-4 py-4 text-center text-gray-500">Tidak ada data yang tersedia</td></tr>');
       } else {
         filteredData.forEach(item=>{
-          const phoneDigits = (item.notelp || '').toString().replace(/\D/g,'');
+          const phoneDigits = normalizeTo62(item.notelp);
           const waLink = phoneDigits
             ? `<a href="https://wa.me/${phoneDigits}" target="_blank" rel="noopener noreferrer" class="whatsapp-link hover:underline">${item.notelp || ''}</a>`
             : (item.notelp || '');
@@ -1069,7 +1093,7 @@
         $tb.append('<tr><td colspan="7" class="px-4 py-4 text-center text-gray-500">Tidak ada data</td></tr>');
       } else {
         vendorFiltered.forEach(r=>{
-          const digits = (r.notelp||'').toString().replace(/\D/g,'');
+          const digits = normalizeTo62(r.notelp);
           const waLink = digits ? `<a href="https://wa.me/${digits}" target="_blank" rel="noopener noreferrer" class="whatsapp-link hover:underline">${r.notelp||''}</a>` : (r.notelp||'');
           let statusBadge = '';
           if (r.status==='OK') statusBadge = '<span class="badge badge-go"><i class="fas fa-check-circle"></i> OK</span>';
@@ -1251,12 +1275,12 @@
         const hS = getHargaFast('sentral', tipe);
 
         const vendor = (function(){
-          if (hA!=null && hS!=null) return (hA<=hS) ? 'Alfacell' : 'Sentral Abadi Jaya';
-          if (hA!=null) return 'Alfacell';
-          if (hS!=null) return 'Sentral Abadi Jaya';
+          if (hA!=null && hS!=null) return (hA<=hS) ? VENDOR_LABEL_ALF : VENDOR_LABEL_SA;
+          if (hA!=null) return VENDOR_LABEL_ALF;
+          if (hS!=null) return VENDOR_LABEL_SA;
           return '-';
         })();
-        const tips = `Alfacell: ${formatHarga(hA)} | Sentral Abadi Jaya: ${formatHarga(hS)}`;
+        const tips = `${VENDOR_LABEL_ALF}: ${formatHarga(hA)} | ${VENDOR_LABEL_SA}: ${formatHarga(hS)}`;
         const hint = (vendor === '-') ? ' (tipe belum ada di DB harga)' : '';
         $tb.append(`
           <tr>
@@ -1286,8 +1310,8 @@
         const hS = getHargaFast('sentral', tipe);
         let vendorTermurah = '-';
         if (hA!=null && hS!=null) vendorTermurah = (hA<=hS)?'Alfacell':'Sentral Abadi Jaya';
-        else if (hA!=null) vendorTermurah = 'Alfacell';
-        else if (hS!=null) vendorTermurah = 'Sentral Abadi Jaya';
+        else if (hA!=null) vendorTermurah = VENDOR_LABEL_ALF;
+        else if (hS!=null) vendorTermurah = VENDOR_LABEL_SA;
         return {
           'Tanggal': d.tanggal||'', 'NPK': d.npk||'', 'Nama': d.nama||'',
           'Tipe HP': tipe, 'Merek': merek, 'Vendor Termurah': vendorTermurah
@@ -1323,9 +1347,9 @@
         const tipe  = d.tipehp || ''; const merek = guessBrand(tipe);
         const hA = getHargaFast('alfacell', tipe); const hS = getHargaFast('sentral', tipe);
         let vendor = '-';
-        if (hA!=null && hS!=null) vendor = (hA<=hS)?'Alfacell':'Sentral Abadi Jaya';
-        else if (hA!=null) vendor = 'Alfacell';
-        else if (hS!=null) vendor = 'Sentral Abadi Jaya';
+        if (hA!=null && hS!=null) vendor = (hA<=hS) ? VENDOR_LABEL_ALF : VENDOR_LABEL_SA;
+        else if (hA!=null) vendor = VENDOR_LABEL_ALF;
+        else if (hS!=null) vendor = VENDOR_LABEL_SA;
         return [d.tanggal||'', d.npk||'', d.nama||'', tipe, merek, vendor];
       });
       doc.autoTable({
@@ -1496,6 +1520,47 @@
           loadData();
         });
     });
-  </script>
+  
+  // === PATCH: CUSTOM TIPE HP MERGE ===
+  const TIPE_HP_CUSTOM = ['VIVO Y29 6/128', 'VIVO Y29 8/128', 'VIVO Y29 8/256', 'Y19S PRO 4/64 GB', 'Y19S PRO 4/128 GB', 'Y19S PRO 6/128 GB', 'REDMI 14C 6/128', 'REDMI 14C 8/256', 'REDMI NOTE 14 8/128', 'REDMI NOTE 14 8/256', 'REDMI NOTE 14 8/256 5G', 'REDMI NOTE 14 12/512 5G', 'REDMI 13 8/128', 'REDMI 13 8/256', 'REDMI POCO PAD 8/256', 'OPPO A60 8/256', 'OPPO A3X 6/128', 'REALME C75 8/128', 'REALME C75 8/256', 'REALME NOTE 60 6/128', 'SAMSUNG A06 4/64', 'SAMSUNG A06 4/128', 'SAMSUNG A06 6/128', 'SAMSUNG A16 8/128', 'SAMSUNG A16 8/256', 'SAMSUNG A16 8/256 5G', 'SMART 10 4/128 GB', 'SMART 10 PLUS 8/128 GB', 'HOT 60i 8/256 GB', 'HOT 60 PRO 8/256 GB', 'INFINIX HOT 50 PRO+ 8/256', 'TECNO SPARK GO 1 4/128', 'POVA 7 8/128 GB', 'POVA 7 8/256 GB', 'CAMON 40 8/256 GB', 'ADVAN TAB VX LITE 6/128GB'];
+
+  // Re-define to merge DB rows with the custom list provided by admin
+  function populateTipeOptionsFromPriceDB(rows = []){
+    const set = new Set();
+    // from DB (PRICE_ENDPOINT)
+    rows.forEach(r => {
+      const t = String(r['TIPE BARANG'] || r['tipe'] || r['Tipe'] || r['TIPE'] || '').trim();
+      if (t) set.add(t);
+    });
+    // from custom list (deduped)
+    (TIPE_HP_CUSTOM || []).forEach(t => { if (t && typeof t === 'string') set.add(t.trim()); });
+    // build sorted
+    const tipes = Array.from(set).sort((a,b)=>a.localeCompare(b));
+    const fill = ($sel) => {
+      $sel.empty().append('<option value="">Pilih Tipe HP</option>');
+      tipes.forEach(t => $sel.append(`<option>${t}</option>`));
+      $sel.append('<option>LAINNYA</option>');
+    };
+    fill($('#tipehp'));
+    fill($('#edit-tipehp'));
+  }
+  // === END PATCH ===
+
+  // === PATCH: NORMALIZE WA 62 ===
+  function normalizeTo62(raw){
+    let digits = String(raw||'').replace(/\D/g,'');
+    if(!digits) return '';
+    if(digits.startsWith('62')) {
+      // collapse any extra leading zeros after country code
+      digits = '62' + digits.slice(2).replace(/^0+/, '');
+      return digits;
+    }
+    if(digits.startsWith('0')) return '62' + digits.slice(1);
+    if(digits.startsWith('8')) return '62' + digits;
+    // fallback: just ensure 62 prefix
+    return '62' + digits;
+  }
+  // === END PATCH ===
+</script>
 </body>
 </html>
