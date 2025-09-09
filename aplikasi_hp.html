@@ -311,6 +311,15 @@
               </select>
             </div>
             <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
+              <select id="vendor-filter-cheapest" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                <option value="">Semua</option>
+                <option value="ALF">Alfacell</option>
+                <option value="SA">Sentral Abadi Jaya</option>
+                <option value="NA">Tidak ditemukan</option>
+              </select>
+            </div>
+            <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Awal</label>
               <input type="text" id="vendor-tanggal-awal" class="tanggal-input w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
             </div>
@@ -336,6 +345,7 @@
                 <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
                 <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alamat Kirim</th>
+                <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200"></tbody>
@@ -351,6 +361,7 @@
       <div class="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
           <h2 class="text-lg md:text-xl font-semibold text-gray-800 mb-2 md:mb-0">Pembanding Harga Vendor Karyawan</h2>
+          <p class="text-xs text-gray-500 mt-1">Hanya menampilkan data dengan status <strong>OK</strong>.</p>
           <div class="flex flex-wrap gap-2">
             <button id="compare-export-excel-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
               <i class="fas fa-file-excel mr-1"></i> Excel
@@ -387,6 +398,8 @@
                 <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
                 <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipe HP</th>
                 <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Merek</th>
+                <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga — <span id="th-alf"></span></th>
+                <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga — <span id="th-sa"></span></th>
                 <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
               </tr>
             </thead>
@@ -431,7 +444,6 @@
     </section>
 
     <section id="settings-section" class="tab-content section-hidden">
-    <!-- Perbaikan Vendor -->
     <div class="mb-6">
       <h3 class="text-md font-medium mb-2 text-gray-700">Perbaikan Vendor</h3>
       <p class="text-sm text-gray-600 mb-3">
@@ -543,8 +555,8 @@
 
   <script>
     // =================================== KONFIGURASI APLIKASI ===================================
-    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbw3pRD68irgo98qVZAOqmYaYHIKAYMv-XRqDoOE0_O9aoHuDYnfTqLsfkHTj8rQqcsH/exec';
-    const PRICE_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzu40FgK2o8iCSTN9r1lBWhSy84wkLbqo_9vtIP-L6qbPG-KIkRf22BIkL5mVFgxvnRIQ/exec';
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbz191HJTNAUPQ2s5oNrehy-JKj-89_rzSmtGywtlq_1wkFVibszGrV2prN90Z0GAG2g/exec';
+    const PRICE_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwhTQTP_2GUwDNbEpDLgC1WorncAYraE8qAkpgo3UyYc_y1O9rlQXYwHQs5XkYZhxRfrA/exec';
 
     // Dynamic vendor labels (loaded from PRICE_ENDPOINT)
     let VENDOR_LABEL_ALF = 'Alfacell';
@@ -1061,10 +1073,17 @@
 
     // =================================== FUNGSI TAB VENDOR ===================================
     function syncVendorFromAll(){
-      vendorData = (allData||[]).map(x=>({
-        tanggal:x.tanggal||'', npk:x.npk||'', nama:x.nama||'', notelp:x.notelp||'',
-        tipehp:x.tipehp||'', status:x.status||'', alamat:x.alamat||''
-      }));
+      vendorData = (allData||[]).map(x=>{
+        const tipe = x.tipehp||'';
+        const { vendor } = cheapestForTipe(tipe);
+        const vendorTermurah = vendor==='ALF' ? VENDOR_LABEL_ALF : vendor==='SA' ? VENDOR_LABEL_SA : '-';
+        return {
+          tanggal:x.tanggal||'', npk:x.npk||'', nama:x.nama||'', notelp:x.notelp||'',
+          tipehp:tipe, status:x.status||'', alamat:x.alamat||'',
+          vendorTermurah,
+          _vendorCode: vendor || 'NA'
+        };
+      });
       vendorFiltered = [...vendorData];
     }
 
@@ -1074,7 +1093,9 @@
       const tAkhir = $('#vendor-tanggal-akhir').val();
       const tipe = $('#vendor-filter-tipehp').val();
       const stat = ($('#vendor-filter-status').val() || '').toUpperCase();
+      const cheapest = $('#vendor-filter-cheapest').val();
       const dir = $('#vendor-sort-tanggal').val() || 'desc';
+
       vendorFiltered = vendorData.filter(r=>{
         let ok = true;
         if (tAwal){ const a = parseDate(tAwal), t = parseDate(r.tanggal); ok = ok && (!a || (t && t >= a)); }
@@ -1084,12 +1105,16 @@
           ok = ok && (tipe==='LAINNYA' ? tp==='LAINNYA' : tp.includes(tipe));
         }
         if (stat) ok = ok && ((r.status||'').toUpperCase() === stat);
-        if (q) ok = ok && ( (r.npk||'').toLowerCase().includes(q) || (r.nama||'').toLowerCase().includes(q) ||
-                            (r.notelp||'').toLowerCase().includes(q) || (r.tipehp||'').toLowerCase().includes(q) ||
-                            (r.alamat||'').toLowerCase().includes(q) || (r.tanggal||'').toLowerCase().includes(q) ||
-                            (r.status||'').toLowerCase().includes(q) );
+        if (cheapest) ok = ok && (r._vendorCode === cheapest);
+        if (q) ok = ok && (
+          (r.npk||'').toLowerCase().includes(q) || (r.nama||'').toLowerCase().includes(q) ||
+          (r.notelp||'').toLowerCase().includes(q) || (r.tipehp||'').toLowerCase().includes(q) ||
+          (r.alamat||'').toLowerCase().includes(q) || (r.tanggal||'').toLowerCase().includes(q) ||
+          (r.status||'').toLowerCase().includes(q) || (r.vendorTermurah||'').toLowerCase().includes(q)
+        );
         return ok;
       });
+
       vendorFiltered.sort((a,b)=>{
         const A = parseDate(a.tanggal) || new Date(0);
         const B = parseDate(b.tanggal) || new Date(0);
@@ -1103,7 +1128,7 @@
     function renderVendorTable(){
       const $tb = $('#vendor-table tbody').empty();
       if (!vendorFiltered.length){
-        $tb.append('<tr><td colspan="7" class="px-4 py-4 text-center text-gray-500">Tidak ada data</td></tr>');
+        $tb.append('<tr><td colspan="8" class="px-4 py-4 text-center text-gray-500">Tidak ada data</td></tr>');
       } else {
         vendorFiltered.forEach(r=>{
           const digits = normalizeTo62(r.notelp);
@@ -1113,6 +1138,7 @@
           else if (['CANCEL','NO ACC'].includes(r.status)) statusBadge = `<span class="badge badge-stop"><i class="fas fa-times-circle"></i> ${r.status}</span>`;
           else if (r.status==='VERIFIKASI') statusBadge = '<span class="badge" style="background:#fef3c7;color:#92400e"><i class="fas fa-exclamation-circle"></i> VERIFIKASI</span>';
           else statusBadge = '<span class="badge" style="background:#f3f4f6;color:#4b5563"><i class="fas fa-question-circle"></i> -</span>';
+
           $tb.append(`<tr>
             <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.tanggal}</td>
             <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.npk}</td>
@@ -1121,6 +1147,7 @@
             <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.tipehp}</td>
             <td class="px-2 md:px-4 py-3 text-sm">${statusBadge}</td>
             <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.alamat || '-'}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.vendorTermurah}</td>
           </tr>`);
         });
       }
@@ -1204,42 +1231,24 @@
       }
     }
 
-    // =================================== FUNGSI TAB DASHBOARD ===================================
-    function updateDashboardCounters(){
-      $('#total-hp').text(allData.length);
-      $('#status-ok').text(allData.filter(x => x.status==='OK').length);
-      $('#status-proses').text(allData.filter(x => x.status==='VERIFIKASI').length);
-      $('#status-issues').text(allData.filter(x => ['CANCEL','NO ACC'].includes(x.status||'')).length);
-    }
-
-    function loadDashboard(){
-      updateDashboardCounters();
-      const tipeHpCounts = {};
-      const statusCounts = { 'OK':0, 'CANCEL':0, 'NO ACC':0, 'VERIFIKASI':0, 'Lainnya':0 };
-      allData.forEach(it=>{
-        if (it.tipehp) tipeHpCounts[it.tipehp] = (tipeHpCounts[it.tipehp]||0)+1;
-        if (['OK','CANCEL','NO ACC','VERIFIKASI'].includes(it.status)) statusCounts[it.status] = (statusCounts[it.status]||0)+1;
-        else statusCounts['Lainnya'] = (statusCounts['Lainnya']||0)+1;
-      });
-      const ctx1 = document.getElementById('tipe-hp-chart').getContext('2d');
-      if (tipeHpChart) tipeHpChart.destroy();
-      tipeHpChart = new Chart(ctx1, {
-        type:'bar',
-        data:{ labels:Object.keys(tipeHpCounts), datasets:[{ label:'Jumlah HP', data:Object.values(tipeHpCounts), backgroundColor:'rgba(245, 158, 11, 0.7)', borderColor:'rgba(245,158,11,1)', borderWidth:1 }] },
-        options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
-      });
-      const ctx2 = document.getElementById('status-chart').getContext('2d');
-      if (statusChart) statusChart.destroy();
-      const baseColors = ['#22c55e','#ef4444','#ef4444','#f59e0b','#9ca3af'];
-      statusChart = new Chart(ctx2, {
-        type:'doughnut',
-        data:{ labels:Object.keys(statusCounts), datasets:[{ data:Object.values(counts), backgroundColor:baseColors, borderColor:baseColors, borderWidth:1 }] },
-        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } }
-      });
-    }
-
     // =================================== FUNGSI TAB PEMBANDING VENDOR ===================================
     function formatHarga(h){ return h!=null ? `Rp ${Number(h).toLocaleString('id-ID')}` : '-'; }
+
+    function cheapestForTipe(tipe){
+      const hA = getHargaFast('alfacell', tipe);
+      const hS = getHargaFast('sentral',  tipe);
+      let vendor = 'NA';
+      if (hA!=null && hS!=null) vendor = (hA<=hS) ? 'ALF' : 'SA';
+      else if (hA!=null) vendor = 'ALF';
+      else if (hS!=null) vendor = 'SA';
+      return { vendor, hA, hS };
+    }
+
+    // set label kolom header pembanding sesuai label dari API
+    function applyVendorHeaderLabels(){
+      $('#th-alf').text(VENDOR_LABEL_ALF);
+      $('#th-sa').text(VENDOR_LABEL_SA);
+    }
 
     function guessBrand(name){
       const u = normName(name);
@@ -1256,24 +1265,27 @@
       const tA = $('#compare-tanggal-awal').val();
       const tB = $('#compare-tanggal-akhir').val();
       const start = tA ? parseDate(tA) : null;
-      const end   = tB ? parseDate(tB) : null;
+      const end   = tB ? parseDate(tB) : null;
       if (end) end.setHours(23,59,59,999);
-      const rows = (allData||[])
-        .filter(d => (d.tipehp||'').trim())
+      // HANYA AMBIL: punya tipehp + status OK + sesuai rentang tanggal (jika diisi)
+      const rows = (allData || [])
+        .filter(d => (d.tipehp || '').trim())
+        .filter(d => (String(d.status || '').toUpperCase() === 'OK'))
         .filter(d => {
           if (!start && !end) return true;
           const t = parseDate(d.tanggal);
           if (!t) return false;
           let ok = true;
           if (start) ok = ok && (t >= start);
-          if (end)   ok = ok && (t <= end);
+          if (end)   ok = ok && (t <= end);
           return ok;
         });
+      // Urutkan terbaru ke lama, lalu nama
       rows.sort((a,b)=>{
         const da = parseDate(a.tanggal) || new Date(0);
         const db = parseDate(b.tanggal) || new Date(0);
         if (db - da !== 0) return db - da;
-        return (a.nama||'').localeCompare(b.nama||'');
+        return (a.nama || '').localeCompare(b.nama || '');
       });
       return rows;
     }
@@ -1284,17 +1296,17 @@
       rows.forEach(d=>{
         const tipe  = d.tipehp || '';
         const merek = guessBrand(tipe);
-        const hA = getHargaFast('alfacell', tipe);
-        const hS = getHargaFast('sentral', tipe);
+        const { vendor, hA, hS } = cheapestForTipe(tipe);
 
-        const vendor = (function(){
-          if (hA!=null && hS!=null) return (hA<=hS) ? VENDOR_LABEL_ALF : VENDOR_LABEL_SA;
-          if (hA!=null) return VENDOR_LABEL_ALF;
-          if (hS!=null) return VENDOR_LABEL_SA;
-          return '-';
-        })();
-        const tips = `${VENDOR_LABEL_ALF}: ${formatHarga(hA)} | ${VENDOR_LABEL_SA}: ${formatHarga(hS)}`;
-        const hint = (vendor === '-') ? ' (tipe belum ada di DB harga)' : '';
+        const vendLabel = vendor === 'ALF' ? VENDOR_LABEL_ALF
+                        : vendor === 'SA' ? VENDOR_LABEL_SA
+                        : '-';
+        const vendBadge = vendLabel === '-'
+          ? '<span class="badge" style="background:#f3f4f6;color:#4b5563"><i class="fas fa-question-circle"></i> -</span>'
+          : (vendLabel === VENDOR_LABEL_ALF
+              ? '<span class="badge badge-go"><i class="fas fa-check-circle"></i> '+VENDOR_LABEL_ALF+'</span>'
+              : '<span class="badge badge-go"><i class="fas fa-check-circle"></i> '+VENDOR_LABEL_SA+'</span>');
+
         $tb.append(`
           <tr>
             <td class="px-2 py-2 text-sm">${d.tanggal||''}</td>
@@ -1302,12 +1314,14 @@
             <td class="px-2 py-2 text-sm">${d.nama||''}</td>
             <td class="px-2 py-2 text-sm">${tipe}</td>
             <td class="px-2 py-2 text-sm">${merek}</td>
-            <td class="px-2 py-2 text-sm" title="${tips}">${vendor}${hint}</td>
+            <td class="px-2 py-2 text-sm">${formatHarga(hA)}</td>
+            <td class="px-2 py-2 text-sm">${formatHarga(hS)}</td>
+            <td class="px-2 py-2 text-sm" title="${VENDOR_LABEL_ALF}: ${formatHarga(hA)} | ${VENDOR_LABEL_SA}: ${formatHarga(hS)}">${vendBadge}</td>
           </tr>
         `);
       });
       if (!rows.length){
-        $tb.append('<tr><td colspan="6" class="px-2 py-3 text-center text-gray-500">Tidak ada data pada periode ini.</td></tr>');
+        $tb.append('<tr><td colspan="8" class="px-2 py-3 text-center text-gray-500">Tidak ada data pada periode ini.</td></tr>');
       }
       $('#compare-count').text(rows.length);
     }
@@ -1319,15 +1333,17 @@
       const data = rows.map(d=>{
         const tipe  = d.tipehp || '';
         const merek = guessBrand(tipe);
-        const hA = getHargaFast('alfacell', tipe);
-        const hS = getHargaFast('sentral', tipe);
-        let vendorTermurah = '-';
-        if (hA!=null && hS!=null) vendorTermurah = (hA<=hS)?'Alfacell':'Sentral Abadi Jaya';
-        else if (hA!=null) vendorTermurah = VENDOR_LABEL_ALF;
-        else if (hS!=null) vendorTermurah = VENDOR_LABEL_SA;
+        const { vendor, hA, hS } = cheapestForTipe(tipe);
+        const vendorTermurah = vendor==='ALF' ? VENDOR_LABEL_ALF : vendor==='SA' ? VENDOR_LABEL_SA : '-';
         return {
-          'Tanggal': d.tanggal||'', 'NPK': d.npk||'', 'Nama': d.nama||'',
-          'Tipe HP': tipe, 'Merek': merek, 'Vendor Termurah': vendorTermurah
+          'Tanggal': d.tanggal||'',
+          'NPK': d.npk||'',
+          'Nama': d.nama||'',
+          'Tipe HP': tipe,
+          'Merek': merek,
+          [`Harga — ${VENDOR_LABEL_ALF}`]: hA ?? '',
+          [`Harga — ${VENDOR_LABEL_SA}`] : hS ?? '',
+          'Vendor': vendorTermurah
         };
       });
       const wb = XLSX.utils.book_new();
@@ -1356,17 +1372,15 @@
       const tB = $('#compare-tanggal-akhir').val() || 'Akhir';
       doc.text(`Tanggal cetak: ${ds}`, 105, 22, { align:'center' });
       doc.text(`Periode: ${tA} - ${tB}`, 105, 27, { align:'center' });
+      const head = [['Tanggal','NPK','Nama','Tipe HP','Merek',`Harga — ${VENDOR_LABEL_ALF}`,`Harga — ${VENDOR_LABEL_SA}`,'Vendor']];
       const body = rows.map(d=>{
-        const tipe  = d.tipehp || ''; const merek = guessBrand(tipe);
-        const hA = getHargaFast('alfacell', tipe); const hS = getHargaFast('sentral', tipe);
-        let vendor = '-';
-        if (hA!=null && hS!=null) vendor = (hA<=hS) ? VENDOR_LABEL_ALF : VENDOR_LABEL_SA;
-        else if (hA!=null) vendor = VENDOR_LABEL_ALF;
-        else if (hS!=null) vendor = VENDOR_LABEL_SA;
-        return [d.tanggal||'', d.npk||'', d.nama||'', tipe, merek, vendor];
+        const tipe = d.tipehp||'', merek = guessBrand(tipe);
+        const { vendor, hA, hS } = cheapestForTipe(tipe);
+        const vendLabel = vendor==='ALF' ? VENDOR_LABEL_ALF : vendor==='SA' ? VENDOR_LABEL_SA : '-';
+        return [d.tanggal||'', d.npk||'', d.nama||'', tipe, merek, formatHarga(hA), formatHarga(hS), vendLabel];
       });
       doc.autoTable({
-        head: [['Tanggal','NPK','Nama','Tipe HP','Merek','Vendor']], body, startY: 34,
+        head:head, body, startY: 34,
         styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [245,158,11], textColor: 255 }
       });
       const safe = `Pembanding_Vendor_${tA.replace(/\//g,'')}_${tB.replace(/\//g,'')}_${ds.replaceAll('/','')}.pdf`;
@@ -1425,7 +1439,7 @@
       allData.forEach(it=>{
         if (it.tipehp) tipeHpCounts[it.tipehp] = (tipeHpCounts[it.tipehp]||0)+1;
         if (['OK','CANCEL','NO ACC','VERIFIKASI'].includes(it.status)) statusCounts[it.status] = (statusCounts[it.status]||0)+1;
-        else statusCounts['Lainnya'] = (counts['Lainnya']||0)+1;
+        else statusCounts['Lainnya'] = (statusCounts['Lainnya']||0)+1;
       });
       const ctx1 = document.getElementById('tipe-hp-chart').getContext('2d');
       if (tipeHpChart) tipeHpChart.destroy();
@@ -1439,7 +1453,7 @@
       const baseColors = ['#22c55e','#ef4444','#ef4444','#f59e0b','#9ca3af'];
       statusChart = new Chart(ctx2, {
         type:'doughnut',
-        data:{ labels:Object.keys(statusCounts), datasets:[{ data:Object.values(counts), backgroundColor:baseColors, borderColor:baseColors, borderWidth:1 }] },
+        data:{ labels:Object.keys(statusCounts), datasets:[{ data:Object.values(statusCounts), backgroundColor:baseColors, borderColor:baseColors, borderWidth:1 }] },
         options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } }
       });
     }
@@ -1463,6 +1477,7 @@
         if (tabId === 'vendor') { syncVendorFromAll(); renderVendorTable(); }
         if (tabId === 'compare') {
           if (!priceReady) await loadPriceDB();
+          applyVendorHeaderLabels();
           renderCompareTable();
         }
       });
@@ -1498,6 +1513,7 @@
       $('#vendor-sort-tanggal').on('change', filterVendor);
       $('#vendor-filter-tipehp').on('change', filterVendor);
       $('#vendor-filter-status').on('change', filterVendor);
+      $('#vendor-filter-cheapest').on('change', filterVendor);
       $('#vendor-tanggal-awal, #vendor-tanggal-akhir').on('change', filterVendor);
       $('#vendor-clear-filter').on('click', () => {
         $('#vendor-search-input').val('');
@@ -1524,6 +1540,7 @@
       // Muat DB harga dulu, lalu data utama
       loadPriceDB()
         .then(() => {
+          applyVendorHeaderLabels();
           loadData();
           if (!$('#compare-section').hasClass('section-hidden')) {
             renderCompareTable();
