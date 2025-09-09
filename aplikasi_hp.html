@@ -168,6 +168,12 @@
               <option value="">Pilih Tipe HP</option>
             </select>
           </div>
+          <!-- INPUT -->
+          <div id="tipehp-custom-wrap" class="mt-2 hidden">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tulis Tipe HP</label>
+            <input type="text" id="tipehp-custom" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Contoh: SAMSUNG A06 4/64">
+            <p class="text-xs text-gray-500 mt-1">Isi ini jika memilih “LAINNYA”.</p>
+          </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Kirim</label>
             <input type="text" id="alamat" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
@@ -298,9 +304,6 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">Filter Tipe HP</label>
               <select id="vendor-filter-tipehp" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
                 <option value="">Semua Tipe</option>
-                <option value="VIVO">VIVO</option><option value="REDMI">REDMI</option>
-                <option value="OPPO">OPPO</option><option value="REALME">REALME</option>
-                <option value="SAMSUNG">SAMSUNG</option><option value="LAINNYA">LAINNYA</option>
               </select>
             </div>
             <div>
@@ -509,6 +512,12 @@
               <option value="">Pilih Tipe HP</option>
             </select>
           </div>
+          <!-- EDIT/MODAL -->
+          <div id="edit-tipehp-custom-wrap" class="mt-2 hidden">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tulis Tipe HP</label>
+            <input type="text" id="edit-tipehp-custom" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Contoh: SAMSUNG A06 4/64">
+            <p class="text-xs text-gray-500 mt-1">Isi ini jika memilih “LAINNYA”.</p>
+          </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Kirim</label>
             <input type="text" id="edit-alamat" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
@@ -612,12 +621,17 @@
         showNotification('warning','Tindakan Diblokir','Centang "Saya paham, lanjutkan" sebelum menyimpan.');
         return;
       }
+      const tipeFinal = getFinalTipeValue('#tipehp', '#tipehp-custom');
+      if (!tipeFinal){
+        showNotification('warning','Tipe HP kosong','Isi Tipe HP (atau tulis manual jika memilih "LAINNYA").');
+        return;
+      }
       const data = {
         tanggal: $('#tanggal').val(),
         npk: $('#npk').val(),
         notelp: $('#notelp').val(),
         cicilan: $('#cicilan').val(),
-        tipehp: $('#tipehp').val(),
+        tipehp: tipeFinal,
         alamat: $('#alamat').val(),
         keterangan: $('#keterangan').val(),
         status: $('#status').val()
@@ -627,6 +641,8 @@
         .done(res => {
           if (res.status === 'success') {
             $('#input-form')[0].reset();
+            $('#tipehp').val('').trigger('change');
+            $('#tipehp-custom').val('');
             hideAngsuranWarning();
             loadData();
             showNotification('success','Berhasil','Data disimpan');
@@ -638,6 +654,11 @@
     }
 
     function updateData(){
+      const tipeFinal = getFinalTipeValue('#edit-tipehp', '#edit-tipehp-custom');
+      if (!tipeFinal){
+        showNotification('warning','Tipe HP kosong','Isi Tipe HP (atau tulis manual jika memilih "LAINNYA").');
+        return;
+      }
       const data = {
         action:'updateData',
         id: $('#edit-id').val(),
@@ -646,7 +667,7 @@
         npk: $('#edit-npk').val(),
         notelp: $('#edit-notelp').val(),
         cicilan: $('#edit-cicilan').val(),
-        tipehp: $('#edit-tipehp').val(),
+        tipehp: tipeFinal,
         alamat: $('#edit-alamat').val(),
         keterangan: $('#edit-keterangan').val(),
         status: $('#edit-status').val(),
@@ -749,6 +770,35 @@
     function toggleSubmitDisabled(dis){
       $('#btn-submit').prop('disabled', dis).toggleClass('opacity-50 cursor-not-allowed', dis);
     }
+    
+    function bindCustomTipe(selectSel, wrapSel, inputSel){
+      const $sel  = $(selectSel);
+      const $wrap = $(wrapSel);
+      const $inp  = $(inputSel);
+      function toggle(){
+        if (($sel.val() || '') === 'LAINNYA'){ $wrap.removeClass('hidden'); setTimeout(()=> $inp.trigger('focus'), 10); }
+        else { $wrap.addClass('hidden'); $inp.val(''); }
+      }
+      $sel.on('change', toggle);
+      toggle();
+    }
+    
+    function getFinalTipeValue(selectSel, inputSel){
+      const v = $(selectSel).val() || '';
+      return v === 'LAINNYA' ? (($(inputSel).val()||'').trim()) : v;
+    }
+    
+    function normalizeTo62(raw){
+      let digits = String(raw||'').replace(/\D/g,'');
+      if(!digits) return '';
+      if(digits.startsWith('62')) {
+        digits = '62' + digits.slice(2).replace(/^0+/, '');
+        return digits;
+      }
+      if(digits.startsWith('0')) return '62' + digits.slice(1);
+      if(digits.startsWith('8')) return '62' + digits;
+      return '62' + digits;
+    }
 
     // =================================== FUNGSI KHUSUS HARGA VENDOR ===================================
     function normName(s){
@@ -817,7 +867,11 @@
             } catch (e) { /* silent */ }
           }
         } catch(e){ /* ignore labels error */ }
-    vendorPrices = { alfacell: [], sentral: [] };
+        
+        document.getElementById('th-alf').textContent = VENDOR_LABEL_ALF;
+        document.getElementById('th-sa').textContent  = VENDOR_LABEL_SA;
+
+        vendorPrices = { alfacell: [], sentral: [] };
         rows.forEach(r=>{
           const tipe  = String(r['tipe'] || r['TIPE BARANG'] || '').trim();
           const merek = String(r['merek'] || r['MEREK'] || '').trim().toUpperCase();
@@ -852,6 +906,7 @@
         }
 
         populateTipeOptionsFromPriceDB(rows);
+        populateVendorFilterTipeFromPriceDB(rows);
         console.log('Vendor price DB loaded:', vendorPrices);
       } catch(err){
         priceReady = false;
@@ -861,24 +916,33 @@
     }
 
     function populateTipeOptionsFromPriceDB(rows){
-      const getTipes = () => {
-        const set = new Set();
-        rows.forEach(r=>{
-          const t = String(r['TIPE BARANG'] || r['tipe'] || r['Tipe'] || r['TIPE'] || '').trim();
-          if (t) set.add(t);
-        });
-        return Array.from(set).sort((a,b)=>a.localeCompare(b));
-      };
-      const tipes = getTipes();
+      const set = new Set();
+      rows.forEach(r=>{
+        const t = String(r['TIPE BARANG'] || r['tipe'] || r['Tipe'] || r['TIPE'] || '').trim();
+        if (t) set.add(t);
+      });
+      const tipes = Array.from(set).sort((a,b)=>a.localeCompare(b));
       if (!tipes.length) return;
       const fill = ($sel) => {
-        if ($sel.find('option').length > 5 && $sel.find('option[value!=""]').length > 1) return;
         $sel.empty().append('<option value="">Pilih Tipe HP</option>');
         tipes.forEach(t => $sel.append(`<option>${t}</option>`));
         $sel.append('<option>LAINNYA</option>');
       };
       fill($('#tipehp'));
       fill($('#edit-tipehp'));
+    }
+
+    function populateVendorFilterTipeFromPriceDB(rows){
+      const set = new Set();
+      rows.forEach(r=>{
+        const t = String(r['TIPE BARANG']||r['tipe']||'').trim();
+        if (t) set.add(t);
+      });
+      const tipes = Array.from(set).sort((a,b)=>a.localeCompare(b));
+      const $sel = $('#vendor-filter-tipehp');
+      $sel.empty().append('<option value="">Semua Tipe</option>');
+      tipes.forEach(t => $sel.append(`<option value="${t}">${t}</option>`));
+      $sel.append('<option value="LAINNYA">LAINNYA</option>');
     }
 
     // =================================== FUNGSI TAB DATA HP ===================================
@@ -971,7 +1035,10 @@
           else if (['CANCEL','NO ACC'].includes(item.status)) statusBadge = `<span class="badge badge-stop"><i class="fas fa-times-circle"></i> ${item.status}</span>`;
           else if (item.status==='VERIFIKASI') statusBadge = '<span class="badge" style="background:#fef3c7;color:#92400e"><i class="fas fa-exclamation-circle"></i> VERIFIKASI</span>';
           else statusBadge = '<span class="badge" style="background:#f3f4f6;color:#4b5563"><i class="fas fa-question-circle"></i> -</span>';
-          const masa = (()=> {
+          const masa = (()=>{
+            if (['CANCEL','NO ACC'].includes((item.status||'').toUpperCase())) {
+              return '<div class="text-sm text-gray-500">-</div>';
+            }
             if (!item.masaCicilan) return '<div class="text-sm text-gray-500">-</div>';
             const p = parseMasaCicilan(item.masaCicilan);
             const cur = p.cur ?? 0, tot = p.tot ?? 0;
@@ -1014,13 +1081,21 @@
       $('#edit-npk').val(it.npk || '');
       $('#edit-notelp').val(it.notelp || '');
       $('#edit-cicilan').val(it.cicilan || '');
-      $('#edit-tipehp').val(it.tipehp || '');
       $('#edit-alamat').val(it.alamat || '');
       $('#edit-keterangan').val(it.keterangan || '');
       $('#edit-status').val(it.status || '');
       $('#edit-stop-mulai').val(it.stopMulai || '');
       $('#edit-lanjut-mulai').val(it.lanjutMulai || '');
       $('#edit-modal').removeClass('hidden');
+
+      const t = it.tipehp || '';
+      const $sel = $('#edit-tipehp');
+      if ($sel.find(`option`).filter(function(){ return $(this).text() === t && $(this).val() === t; }).length){
+        $sel.val(t).trigger('change');
+      } else {
+        $sel.val('LAINNYA').trigger('change');
+        $('#edit-tipehp-custom').val(t);
+      }
     }
     
     async function exportToExcel(){
@@ -1459,7 +1534,7 @@
     }
 
     // =================================== INTI APLIKASI ===================================
-    $(function(){
+    $(document).ready(function(){
       // Inisialisasi Datepicker
       $(".tanggal-input").datepicker({ dateFormat: "dd/mm/yy", changeMonth: true, changeYear: true, yearRange: "2020:2035" });
 
@@ -1505,7 +1580,7 @@
       });
 
       // Event listener tab Vendor
-      $('#vendor-refresh-btn').on('click', () => { syncVendorFromAll(); renderVendorTable(); });
+      $('#vendor-refresh-btn').on('click', function(){ loadPriceDB(); });
       $('#vendor-export-excel-btn').on('click', exportVendorToExcel);
       $('#vendor-export-pdf-btn').on('click', exportVendorToPDF);
       $('#vendor-export-jpeg-btn').on('click', exportVendorToJPEG);
@@ -1537,60 +1612,24 @@
       $('#compare-export-pdf-btn').on('click', exportCompareToPDF);
       $('#compare-export-jpeg-btn').on('click', exportCompareToJPEG);
 
-      // Muat DB harga dulu, lalu data utama
-      loadPriceDB()
-        .then(() => {
-          applyVendorHeaderLabels();
-          loadData();
-          if (!$('#compare-section').hasClass('section-hidden')) {
-            renderCompareTable();
-          }
-        })
-        .catch(() => {
-          loadData();
-        });
-    });
-  
-  // === PATCH: CUSTOM TIPE HP MERGE ===
-  const TIPE_HP_CUSTOM = ['VIVO Y29 6/128', 'VIVO Y29 8/128', 'VIVO Y29 8/256', 'Y19S PRO 4/64 GB', 'Y19S PRO 4/128 GB', 'Y19S PRO 6/128 GB', 'REDMI 14C 6/128', 'REDMI 14C 8/256', 'REDMI NOTE 14 8/128', 'REDMI NOTE 14 8/256', 'REDMI NOTE 14 8/256 5G', 'REDMI NOTE 14 12/512 5G', 'REDMI 13 8/128', 'REDMI 13 8/256', 'REDMI POCO PAD 8/256', 'OPPO A60 8/256', 'OPPO A3X 6/128', 'REALME C75 8/128', 'REALME C75 8/256', 'REALME NOTE 60 6/128', 'SAMSUNG A06 4/64', 'SAMSUNG A06 4/128', 'SAMSUNG A06 6/128', 'SAMSUNG A16 8/128', 'SAMSUNG A16 8/256', 'SAMSUNG A16 8/256 5G', 'SMART 10 4/128 GB', 'SMART 10 PLUS 8/128 GB', 'HOT 60i 8/256 GB', 'HOT 60 PRO 8/256 GB', 'INFINIX HOT 50 PRO+ 8/256', 'TECNO SPARK GO 1 4/128', 'POVA 7 8/128 GB', 'POVA 7 8/256 GB', 'CAMON 40 8/256 GB', 'ADVAN TAB VX LITE 6/128GB'];
+      // 1) Muat opsi tipe dinamis dari price DB
+      loadPriceDB();
 
-  // Re-define to merge DB rows with the custom list provided by admin
-  function populateTipeOptionsFromPriceDB(rows = []){
-    const set = new Set();
-    // from DB (PRICE_ENDPOINT)
-    rows.forEach(r => {
-      const t = String(r['TIPE BARANG'] || r['tipe'] || r['Tipe'] || r['TIPE'] || '').trim();
-      if (t) set.add(t);
-    });
-    // from custom list (deduped)
-    (TIPE_HP_CUSTOM || []).forEach(t => { if (t && typeof t === 'string') set.add(t.trim()); });
-    // build sorted
-    const tipes = Array.from(set).sort((a,b)=>a.localeCompare(b));
-    const fill = ($sel) => {
-      $sel.empty().append('<option value="">Pilih Tipe HP</option>');
-      tipes.forEach(t => $sel.append(`<option>${t}</option>`));
-      $sel.append('<option>LAINNYA</option>');
-    };
-    fill($('#tipehp'));
-    fill($('#edit-tipehp'));
-  }
-  // === END PATCH ===
+      // 2) Muat data HP
+      loadData();
 
-  // === PATCH: NORMALIZE WA 62 ===
-  function normalizeTo62(raw){
-    let digits = String(raw||'').replace(/\D/g,'');
-    if(!digits) return '';
-    if(digits.startsWith('62')) {
-      // collapse any extra leading zeros after country code
-      digits = '62' + digits.slice(2).replace(/^0+/, '');
-      return digits;
-    }
-    if(digits.startsWith('0')) return '62' + digits.slice(1);
-    if(digits.startsWith('8')) return '62' + digits;
-    // fallback: just ensure 62 prefix
-    return '62' + digits;
-  }
-  // === END PATCH ===
-</script>
+      // 3) (Opsional) aktifkan Select2 biar searchable
+      if ($.fn.select2){
+        $('#tipehp, #edit-tipehp').select2({ placeholder:'Pilih Tipe HP', allowClear:true, width:'100%' });
+      }
+
+      // 4) Bind toggle “LAINNYA”
+      bindCustomTipe('#tipehp', '#tipehp-custom-wrap', '#tipehp-custom');
+      bindCustomTipe('#edit-tipehp', '#edit-tipehp-custom-wrap', '#edit-tipehp-custom');
+
+      // 5) Saat klik Refresh Vendor → muat ulang price DB agar opsi tipe update
+      $('#vendor-refresh-btn').on('click', function(){ loadPriceDB(); });
+    });
+  </script>
 </body>
 </html>
