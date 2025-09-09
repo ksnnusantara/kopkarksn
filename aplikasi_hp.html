@@ -799,7 +799,7 @@
       if(digits.startsWith('8')) return '62' + digits;
       return '62' + digits;
     }
-
+    
     // =================================== FUNGSI KHUSUS HARGA VENDOR ===================================
     function normName(s){
       return (s||'')
@@ -835,6 +835,45 @@
       vendorPrices.alfacell.forEach(it => vendorIndex.alfacell.set(normName(it.nama), it.harga));
       vendorPrices.sentral.forEach(it  => vendorIndex.sentral.set(normName(it.nama),  it.harga));
     }
+    
+    function cheapestForTipe(typeName){
+      if (!typeName) return { code:'NA', vendor:'Tidak ditemukan', hargaAlf:null, hargaSa:null };
+    
+      const hAlf = getHargaFast('alfacell', typeName); // pakai index cepat
+      const hSa  = getHargaFast('sentral',  typeName);
+    
+      if (hAlf == null && hSa == null){
+        return { code:'NA', vendor:'Tidak ditemukan', hargaAlf:null, hargaSa:null };
+      }
+      if (hAlf != null && (hSa == null || hAlf < hSa)){
+        return { code:'ALF', vendor: VENDOR_LABEL_ALF, hargaAlf:hAlf, hargaSa:hSa };
+      }
+      if (hSa != null && (hAlf == null || hSa < hAlf)){
+        return { code:'SA', vendor: VENDOR_LABEL_SA,  hargaAlf:hAlf, hargaSa:hSa };
+      }
+      // sama persis
+      return { code:'SAME', vendor:`${VENDOR_LABEL_ALF} / ${VENDOR_LABEL_SA}`, hargaAlf:hAlf, hargaSa:hSa };
+    }
+    
+    function updateVendorLabelsUI(){
+      // Header kolom di tab Pembanding
+      const elAlf = document.getElementById('th-alf');
+      const elSa  = document.getElementById('th-sa');
+      if (elAlf) elAlf.textContent = VENDOR_LABEL_ALF || 'Vendor A';
+      if (elSa)  elSa.textContent  = VENDOR_LABEL_SA  || 'Vendor B';
+    
+      // Filter "Vendor" di tab Vendor (ganti label, value tetap untuk kompatibilitas)
+      const $vf = $('#vendor-filter-cheapest');
+      if ($vf.length){
+        const cur = $vf.val() || '';
+        $vf.empty()
+           .append('<option value="">Semua</option>')
+           .append(`<option value="ALF">${VENDOR_LABEL_ALF || 'Vendor A'}</option>`)
+           .append(`<option value="SA">${VENDOR_LABEL_SA  || 'Vendor B'}</option>`)
+           .append('<option value="NA">Tidak ditemukan</option>');
+        $vf.val(cur); // kembalikan pilihan sebelumnya bila ada
+      }
+    }
 
     async function loadPriceDB(){
       showNotification('info', 'Memuat Harga', 'Mengambil database harga vendor...');
@@ -868,9 +907,6 @@
           }
         } catch(e){ /* ignore labels error */ }
         
-        document.getElementById('th-alf').textContent = VENDOR_LABEL_ALF;
-        document.getElementById('th-sa').textContent  = VENDOR_LABEL_SA;
-
         vendorPrices = { alfacell: [], sentral: [] };
         rows.forEach(r=>{
           const tipe  = String(r['tipe'] || r['TIPE BARANG'] || '').trim();
@@ -907,6 +943,7 @@
 
         populateTipeOptionsFromPriceDB(rows);
         populateVendorFilterTipeFromPriceDB(rows);
+        updateVendorLabelsUI();
         console.log('Vendor price DB loaded:', vendorPrices);
       } catch(err){
         priceReady = false;
@@ -1150,13 +1187,13 @@
     function syncVendorFromAll(){
       vendorData = (allData||[]).map(x=>{
         const tipe = x.tipehp||'';
-        const { vendor } = cheapestForTipe(tipe);
-        const vendorTermurah = vendor==='ALF' ? VENDOR_LABEL_ALF : vendor==='SA' ? VENDOR_LABEL_SA : '-';
+        const vendorInfo = cheapestForTipe(tipe);
         return {
           tanggal:x.tanggal||'', npk:x.npk||'', nama:x.nama||'', notelp:x.notelp||'',
           tipehp:tipe, status:x.status||'', alamat:x.alamat||'',
-          vendorTermurah,
-          _vendorCode: vendor || 'NA'
+          vendorTermurah: vendorInfo.vendor,
+          _vendorCode: vendorInfo.code,
+          vendorInfo: vendorInfo
         };
       });
       vendorFiltered = [...vendorData];
@@ -1205,24 +1242,26 @@
       if (!vendorFiltered.length){
         $tb.append('<tr><td colspan="8" class="px-4 py-4 text-center text-gray-500">Tidak ada data</td></tr>');
       } else {
-        vendorFiltered.forEach(r=>{
-          const digits = normalizeTo62(r.notelp);
-          const waLink = digits ? `<a href="https://wa.me/${digits}" target="_blank" rel="noopener noreferrer" class="whatsapp-link hover:underline">${r.notelp||''}</a>` : (r.notelp||'');
+        vendorFiltered.forEach(v=>{
+          const digits = normalizeTo62(v.notelp);
+          const waLink = digits ? `<a href="https://wa.me/${digits}" target="_blank" rel="noopener noreferrer" class="whatsapp-link hover:underline">${v.notelp||''}</a>` : (v.notelp||'');
           let statusBadge = '';
-          if (r.status==='OK') statusBadge = '<span class="badge badge-go"><i class="fas fa-check-circle"></i> OK</span>';
-          else if (['CANCEL','NO ACC'].includes(r.status)) statusBadge = `<span class="badge badge-stop"><i class="fas fa-times-circle"></i> ${r.status}</span>`;
-          else if (r.status==='VERIFIKASI') statusBadge = '<span class="badge" style="background:#fef3c7;color:#92400e"><i class="fas fa-exclamation-circle"></i> VERIFIKASI</span>';
+          if (v.status==='OK') statusBadge = '<span class="badge badge-go"><i class="fas fa-check-circle"></i> OK</span>';
+          else if (['CANCEL','NO ACC'].includes(v.status)) statusBadge = `<span class="badge badge-stop"><i class="fas fa-times-circle"></i> ${v.status}</span>`;
+          else if (v.status==='VERIFIKASI') statusBadge = '<span class="badge" style="background:#fef3c7;color:#92400e"><i class="fas fa-exclamation-circle"></i> VERIFIKASI</span>';
           else statusBadge = '<span class="badge" style="background:#f3f4f6;color:#4b5563"><i class="fas fa-question-circle"></i> -</span>';
+          
+          const vendorDisplay = v.vendorInfo?.vendor || '-';
 
           $tb.append(`<tr>
-            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.tanggal}</td>
-            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.npk}</td>
-            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.nama}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${v.tanggal}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${v.npk}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${v.nama}</td>
             <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${waLink}</td>
-            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.tipehp}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${v.tipehp}</td>
             <td class="px-2 md:px-4 py-3 text-sm">${statusBadge}</td>
-            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.alamat || '-'}</td>
-            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${r.vendorTermurah}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${v.alamat || '-'}</td>
+            <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${vendorDisplay}</td>
           </tr>`);
         });
       }
@@ -1309,22 +1348,6 @@
     // =================================== FUNGSI TAB PEMBANDING VENDOR ===================================
     function formatHarga(h){ return h!=null ? `Rp ${Number(h).toLocaleString('id-ID')}` : '-'; }
 
-    function cheapestForTipe(tipe){
-      const hA = getHargaFast('alfacell', tipe);
-      const hS = getHargaFast('sentral',  tipe);
-      let vendor = 'NA';
-      if (hA!=null && hS!=null) vendor = (hA<=hS) ? 'ALF' : 'SA';
-      else if (hA!=null) vendor = 'ALF';
-      else if (hS!=null) vendor = 'SA';
-      return { vendor, hA, hS };
-    }
-
-    // set label kolom header pembanding sesuai label dari API
-    function applyVendorHeaderLabels(){
-      $('#th-alf').text(VENDOR_LABEL_ALF);
-      $('#th-sa').text(VENDOR_LABEL_SA);
-    }
-
     function guessBrand(name){
       const u = normName(name);
       const map = [
@@ -1375,12 +1398,13 @@
 
         const vendLabel = vendor === 'ALF' ? VENDOR_LABEL_ALF
                         : vendor === 'SA' ? VENDOR_LABEL_SA
+                        : vendor === 'SAME' ? `${VENDOR_LABEL_ALF} / ${VENDOR_LABEL_SA}`
                         : '-';
+
         const vendBadge = vendLabel === '-'
           ? '<span class="badge" style="background:#f3f4f6;color:#4b5563"><i class="fas fa-question-circle"></i> -</span>'
-          : (vendLabel === VENDOR_LABEL_ALF
-              ? '<span class="badge badge-go"><i class="fas fa-check-circle"></i> '+VENDOR_LABEL_ALF+'</span>'
-              : '<span class="badge badge-go"><i class="fas fa-check-circle"></i> '+VENDOR_LABEL_SA+'</span>');
+          : (vendor === 'SAME' ? `<span class="badge" style="background:#fef3c7;color:#92400e"><i class="fas fa-balance-scale"></i> ${vendLabel}</span>`
+              : `<span class="badge badge-go"><i class="fas fa-check-circle"></i> ${vendLabel}</span>`);
 
         $tb.append(`
           <tr>
@@ -1409,7 +1433,10 @@
         const tipe  = d.tipehp || '';
         const merek = guessBrand(tipe);
         const { vendor, hA, hS } = cheapestForTipe(tipe);
-        const vendorTermurah = vendor==='ALF' ? VENDOR_LABEL_ALF : vendor==='SA' ? VENDOR_LABEL_SA : '-';
+        const vendorTermurah = vendor === 'ALF' ? VENDOR_LABEL_ALF 
+                             : vendor === 'SA' ? VENDOR_LABEL_SA 
+                             : vendor === 'SAME' ? `${VENDOR_LABEL_ALF} / ${VENDOR_LABEL_SA}`
+                             : '-';
         return {
           'Tanggal': d.tanggal||'',
           'NPK': d.npk||'',
@@ -1451,7 +1478,10 @@
       const body = rows.map(d=>{
         const tipe = d.tipehp||'', merek = guessBrand(tipe);
         const { vendor, hA, hS } = cheapestForTipe(tipe);
-        const vendLabel = vendor==='ALF' ? VENDOR_LABEL_ALF : vendor==='SA' ? VENDOR_LABEL_SA : '-';
+        const vendLabel = vendor === 'ALF' ? VENDOR_LABEL_ALF 
+                        : vendor === 'SA' ? VENDOR_LABEL_SA 
+                        : vendor === 'SAME' ? `${VENDOR_LABEL_ALF} / ${VENDOR_LABEL_SA}`
+                        : '-';
         return [d.tanggal||'', d.npk||'', d.nama||'', tipe, merek, formatHarga(hA), formatHarga(hS), vendLabel];
       });
       doc.autoTable({
