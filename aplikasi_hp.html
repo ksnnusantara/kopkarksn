@@ -4,65 +4,78 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DATA HANDPONE KSN (Scroll Tanpa Halaman)</title>
-
   <script src="https://cdn.tailwindcss.com"></script>
-
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
   <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
   <style>
     /* Styling kustom untuk tampilan yang lebih baik */
-    :root{ --yellow:#f59e0b }
+    :root{ 
+      --gold: #d4af37;
+      --gold-light: #f0e6c2;
+      --gold-dark: #b8941f;
+      --gold-gradient: linear-gradient(135deg, #d4af37, #f0e6c2);
+      --text-dark: #333333;
+      --text-light: #666666;
+      --bg-light: #faf8f3;
+      --bg-card: #ffffff;
+      --border-color: #e5d4a1;
+      --shadow-color: rgba(212, 175, 55, 0.15);
+    }
+    
     html,body{height:100%}
-    body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#fff,#fffef0)}
+    body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#faf8f3,#fff9e6);color:var(--text-dark)}
+    
     .section-hidden{display:none}
     .select2-container{width:100%!important}
     .whatsapp-link{color:#25D366}
+    
     .badge{border-radius:999px;padding:2px 8px;font-size:11px;display:inline-flex;align-items:center;gap:6px}
     .badge-stop{background:#fee2e2;color:#b91c1c}
     .badge-go{background:#dcfce7;color:#166534}
+    
     .progress-wrap{height:8px;background:#f1f5f9;border-radius:9999px;overflow:hidden}
-    .progress-bar{height:100%;background:var(--yellow);width:0}
+    .progress-bar{height:100%;background:var(--gold);width:0}
+    
     .sortable{cursor:pointer; user-select:none; white-space:nowrap;}
     .sortable .arrow { opacity:.45; margin-left:6px; }
     .sortable[aria-sort="ascending"] .arrow::after  { content:'▲'; }
     .sortable[aria-sort="descending"] .arrow::after { content:'▼'; }
+    
     .metric-card{
-      background:#fff;border-radius:16px;box-shadow:0 8px 28px rgba(15,23,42,.10);
+      background:var(--bg-card);border-radius:16px;box-shadow:0 8px 28px var(--shadow-color);
       padding:18px 20px;display:flex;align-items:center;gap:14px;
       transition:transform .15s ease, box-shadow .15s ease;cursor:pointer;
+      border: 1px solid var(--border-color);
     }
-    .metric-card:hover{ transform:translateY(-2px); box-shadow:0 12px 32px rgba(15,23,42,.12); }
+    .metric-card:hover{ transform:translateY(-2px); box-shadow:0 12px 32px rgba(212, 175, 55, 0.25); }
     .metric-icon{ width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center; }
-    .metric-title{font-size:14px;color:#6b7280}
-    .metric-value{font-size:30px;font-weight:700;color:#111827;line-height:1}
+    .metric-title{font-size:14px;color:var(--text-light)}
+    .metric-value{font-size:30px;font-weight:700;color:var(--text-dark);line-height:1}
     .icon-blue { background:#e0ecff;color:#3973ff }
     .icon-green{ background:#e8f9ef;color:#16a34a }
-    .icon-amber{ background:#fff2cc;color:#d97706 }
+    .icon-amber{ background:var(--gold-light);color:var(--gold-dark) }
     .icon-red  { background:#ffe4e6;color:#ef4444 }
-
+    
     .table-scroll {
       max-height: 520px;
       overflow-y: auto;
-      border: 1px solid #e5e7eb;
+      border: 1px solid var(--border-color);
       border-radius: 10px;
     }
-    thead.sticky-top { position: sticky; top: 0; z-index: 5; }
-
+    
+    thead.sticky-top { position: sticky; top: 0; z-index: 5; background: var(--bg-light); }
+    
     @media (max-width: 768px) {
       .container { padding-left: 1rem; padding-right: 1rem; }
       .tab-btn { font-size: 0.75rem; padding: 0.5rem; }
@@ -74,61 +87,433 @@
       th, td { padding: 0.5rem 0.25rem; }
       .progress-wrap { height: 6px; }
     }
+    
     .ui-datepicker { font-size:0.9rem; width:17em; }
-    .ui-datepicker .ui-datepicker-header { padding:0.3em 0; }
+    .ui-datepicker .ui-datepicker-header { padding:0.3em 0; background: var(--gold); color: white; }
     .ui-datepicker .ui-datepicker-title { font-size:0.9rem; }
     .ui-datepicker th { font-size:0.8rem; padding:0.3em; }
     .ui-datepicker td { padding:0; }
     .ui-datepicker td a, .ui-datepicker td span { padding:0.3em; }
-
+    .ui-datepicker .ui-state-highlight { background: var(--gold-light) !important; }
+    .ui-datepicker .ui-state-active { background: var(--gold) !important; color: white !important; }
+    
     @media (max-width: 768px) {
       #edit-modal .bg-white { margin:1rem;width:calc(100% - 2rem); }
     }
-
-    .vendor-capture-container { background: white; padding: 20px; border-radius: 8px; }
-    .vendor-capture-title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px; }
-    .vendor-capture-date { text-align: center; font-size: 12px; margin-bottom: 20px; color: #666; }
-    .vendor-filter-container { background-color: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
-    .vendor-filter-title { font-weight: 600; margin-bottom: 8px; color: #374151; }
+    
+    .vendor-capture-container { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); }
+    .vendor-capture-title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px; color: var(--gold-dark); }
+    .vendor-capture-date { text-align: center; font-size: 12px; margin-bottom: 20px; color: var(--text-light); }
+    
+    .vendor-filter-container { background-color: var(--bg-light); border-radius: 8px; padding: 12px; margin-bottom: 16px; border: 1px solid var(--border-color); }
+    .vendor-filter-title { font-weight: 600; margin-bottom: 8px; color: var(--gold-dark); }
+    
+    /* Loading Spinner */
+    .spinner {
+      border: 3px solid rgba(212, 175, 55, 0.3);
+      border-radius: 50%;
+      border-top: 3px solid var(--gold);
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Improved button styles */
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .btn-primary {
+      background-color: var(--gold);
+      color: white;
+      border: 1px solid var(--gold-dark);
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--gold-dark);
+    }
+    
+    .btn-success {
+      background-color: #10b981;
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background-color: #059669;
+    }
+    
+    .btn-danger {
+      background-color: #ef4444;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background-color: #dc2626;
+    }
+    
+    .btn-warning {
+      background-color: var(--gold);
+      color: white;
+      border: 1px solid var(--gold-dark);
+    }
+    
+    .btn-warning:hover {
+      background-color: var(--gold-dark);
+    }
+    
+    .btn-secondary {
+      background-color: var(--gold-light);
+      color: var(--gold-dark);
+      border: 1px solid var(--border-color);
+    }
+    
+    .btn-secondary:hover {
+      background-color: var(--border-color);
+    }
+    
+    /* Improved card styles */
+    .card {
+      background-color: var(--bg-card);
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-color);
+    }
+    
+    /* Improved form styles */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-dark);
+    }
+    
+    .form-control {
+      display: block;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: var(--text-dark);
+      background-color: white;
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    
+    .form-control:focus {
+      border-color: var(--gold);
+      outline: 0;
+      box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+    }
+    
+    /* Improved table styles */
+    .table {
+      width: 100%;
+      margin-bottom: 1rem;
+      color: var(--text-dark);
+    }
+    
+    .table th,
+    .table td {
+      padding: 0.75rem;
+      vertical-align: top;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .table thead th {
+      vertical-align: bottom;
+      border-bottom: 2px solid var(--gold);
+      background-color: var(--bg-light);
+      color: var(--gold-dark);
+    }
+    
+    .table tbody tr:hover {
+      background-color: var(--bg-light);
+    }
+    
+    /* Notification improvements */
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      min-width: 300px;
+      max-width: 500px;
+      background-color: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      padding: 1rem;
+      display: flex;
+      align-items: flex-start;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      border-left: 4px solid var(--gold);
+    }
+    
+    .notification.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    
+    .notification-icon {
+      margin-right: 0.75rem;
+      font-size: 1.25rem;
+    }
+    
+    .notification-close {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--text-light);
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    
+    .notification-success {
+      border-left-color: #10b981;
+    }
+    
+    .notification-error {
+      border-left-color: #ef4444;
+    }
+    
+    .notification-warning {
+      border-left-color: var(--gold);
+    }
+    
+    .notification-info {
+      border-left-color: #3b82f6;
+    }
+    
+    /* Modal improvements */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .modal-content {
+      background-color: var(--bg-card);
+      border-radius: 0.5rem;
+      box-shadow: 0 20px 25px -5px var(--shadow-color), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      width: 100%;
+      max-width: 2rem;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+      border: 1px solid var(--border-color);
+    }
+    
+    .modal.show .modal-content {
+      transform: scale(1);
+    }
+    
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--gold-dark);
+    }
+    
+    .modal-body {
+      padding: 1.5rem;
+    }
+    
+    .modal-footer {
+      padding: 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+    
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .loading-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(212, 175, 55, 0.2);
+      border-radius: 50%;
+      border-top-color: var(--gold);
+      animation: spin 1s linear infinite;
+    }
+    
+    /* Tab improvements */
+    .tab-container {
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+    
+    .tab-list {
+      display: flex;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .tab-btn {
+      padding: 0.75rem 1rem;
+      font-weight: 500;
+      color: var(--text-light);
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    
+    .tab-btn:hover {
+      color: var(--text-dark);
+    }
+    
+    .tab-btn.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+    
+    /* Responsive improvements */
+    @media (max-width: 640px) {
+      .metric-card {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .metric-icon {
+        margin-bottom: 0.5rem;
+      }
+    }
+    
+    /* Gold accents */
+    .gold-accent {
+      color: var(--gold);
+      font-weight: 600;
+    }
+    
+    .gold-bg {
+      background-color: var(--gold-light);
+    }
+    
+    .gold-border {
+      border-color: var(--gold);
+    }
+    
+    .gold-text {
+      color: var(--gold);
+    }
+    
+    /* Header styling */
+    header h1 {
+      background: var(--gold-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+    }
   </style>
 </head>
 <body class="min-h-full">
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+  </div>
+  
   <div class="container mx-auto px-4 py-4 md:py-8 max-w-7xl">
     <div class="mb-4">
       <a href="index.html" class="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition duration-300">
         <i class="fas fa-arrow-left mr-2"></i> Kembali
       </a>
     </div>
-
     <header class="mb-6 md:mb-8 text-center">
-      <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">DATA HANDPONE KSN</h1>
+      <h1 class="text-2xl md:text-3xl font-bold mb-2">DATA HANDPONE KSN</h1>
+      <p class="text-gray-600">Sistem Manajemen Data Handphone Karyawan</p>
     </header>
-
-    <div class="flex border-b border-gray-200 mb-4 md:mb-6 overflow-x-auto">
-      <button class="tab-btn px-3 py-2 md:px-4 font-medium text-sm border-b-2 border-yellow-500 text-yellow-600 whitespace-nowrap" data-tab="input">
-        <i class="fas fa-plus-circle mr-1 md:mr-2"></i>Input Data
-      </button>
-      <button class="tab-btn px-3 py-2 md:px-4 font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap" data-tab="data">
-        <i class="fas fa-table mr-1 md:mr-2"></i>Data HP
-      </button>
-      <button class="tab-btn px-3 py-2 md:px-4 font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap" data-tab="vendor">
-        <i class="fas fa-truck mr-1 md:mr-2"></i>Vendor
-      </button>
-      <button class="tab-btn px-3 py-2 md:px-4 font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap" data-tab="compare">
-        <i class="fas fa-balance-scale mr-1 md:mr-2"></i>Pembanding Vendor
-      </button>
-      <button class="tab-btn px-3 py-2 md:px-4 font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap" data-tab="dashboard">
-        <i class="fas fa-chart-bar mr-1 md:mr-2"></i>Dashboard
-      </button>
-      <button class="tab-btn px-3 py-2 md:px-4 font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap" data-tab="settings">
-        <i class="fas fa-cog mr-1 md:mr-2"></i>Pengaturan
-      </button>
+    
+    <div class="tab-container">
+      <div class="tab-list">
+        <button class="tab-btn active" data-tab="input">
+          <i class="fas fa-plus-circle mr-1 md:mr-2"></i>Input Data
+        </button>
+        <button class="tab-btn" data-tab="data">
+          <i class="fas fa-table mr-1 md:mr-2"></i>Data HP
+        </button>
+        <button class="tab-btn" data-tab="vendor">
+          <i class="fas fa-truck mr-1 md:mr-2"></i>Vendor
+        </button>
+        <button class="tab-btn" data-tab="compare">
+          <i class="fas fa-balance-scale mr-1 md:mr-2"></i>Pembanding Vendor
+        </button>
+        <button class="tab-btn" data-tab="dashboard">
+          <i class="fas fa-chart-bar mr-1 md:mr-2"></i>Dashboard
+        </button>
+        <button class="tab-btn" data-tab="settings">
+          <i class="fas fa-cog mr-1 md:mr-2"></i>Pengaturan
+        </button>
+      </div>
     </div>
-
+    
     <section id="input-section" class="tab-content">
-      <div class="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
-        <h2 class="text-lg md:text-xl font-semibold mb-4 text-gray-800">Input Data HP Baru</h2>
-
+      <div class="card">
+        <h2 class="text-lg md:text-xl font-semibold mb-4 gold-text">Input Data HP Baru</h2>
         <div id="angsuran-warning-input" class="hidden mb-4 rounded-md border border-yellow-300 bg-yellow-50 p-3 text-yellow-800">
           <div class="flex items-start gap-3">
             <i class="fas fa-triangle-exclamation mt-0.5"></i>
@@ -143,106 +528,104 @@
             </div>
           </div>
         </div>
-
         <form id="input-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-            <input type="text" id="tanggal" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY" required>
+          <div class="form-group">
+            <label class="form-label">Tanggal</label>
+            <input type="text" id="tanggal" class="tanggal-input form-control" placeholder="DD/MM/YYYY" required>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">NPK</label>
-            <input type="text" id="npk" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+          <div class="form-group">
+            <label class="form-label">NPK</label>
+            <input type="text" id="npk" class="form-control" required>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">No. Telp</label>
-            <input type="text" id="notelp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+          <div class="form-group">
+            <label class="form-label">No. Telp</label>
+            <input type="text" id="notelp" class="form-control" required>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Cicilan (bulan)</label>
-            <input type="number" id="cicilan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" min="1" required>
+          <div class="form-group">
+            <label class="form-label">Cicilan (bulan)</label>
+            <input type="number" id="cicilan" class="form-control" min="1" required>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tipe HP</label>
-            <select id="tipehp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+          <div class="form-group">
+            <label class="form-label">Tipe HP</label>
+            <select id="tipehp" class="form-control" required>
               <option value="">Pilih Tipe HP</option>
             </select>
           </div>
-          <!-- INPUT -->
-          <div id="tipehp-custom-wrap" class="mt-2 hidden">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tulis Tipe HP</label>
-            <input type="text" id="tipehp-custom" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Contoh: SAMSUNG A06 4/64">
-            <p class="text-xs text-gray-500 mt-1">Isi ini jika memilih “LAINNYA”.</p>
+          <div id="tipehp-custom-wrap" class="form-group hidden">
+            <label class="form-label">Tulis Tipe HP</label>
+            <input type="text" id="tipehp-custom" class="form-control" placeholder="Contoh: SAMSUNG A06 4/64">
+            <p class="text-xs text-gray-500 mt-1">Isi ini jika memilih "LAINNYA".</p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Kirim</label>
-            <input type="text" id="alamat" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+          <div class="form-group">
+            <label class="form-label">Alamat Kirim</label>
+            <input type="text" id="alamat" class="form-control" required>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select id="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select id="status" class="form-control">
               <option value="">Pilih Status</option>
               <option>OK</option><option>CANCEL</option><option>NO ACC</option><option>VERIFIKASI</option>
             </select>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
-            <input type="text" id="keterangan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+          <div class="form-group">
+            <label class="form-label">Keterangan</label>
+            <input type="text" id="keterangan" class="form-control">
           </div>
           <div class="md:col-span-2">
-            <button id="btn-submit" type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-md transition duration-300">
+            <button id="btn-submit" type="submit" class="btn btn-warning w-full">
               <i class="fas fa-save mr-2"></i>Simpan Data
             </button>
           </div>
         </form>
       </div>
     </section>
-
+    
     <section id="data-section" class="tab-content section-hidden">
-      <div class="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
+      <div class="card">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-          <h2 class="text-lg md:text-xl font-semibold text-gray-800 mb-2 md:mb-0">Data HP Karyawan</h2>
+          <h2 class="text-lg md:text-xl font-semibold gold-text mb-2 md:mb-0">Data HP Karyawan</h2>
           <div class="flex flex-wrap gap-2">
-            <button id="refresh-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+            <button id="refresh-btn" class="btn btn-primary">
               <i class="fas fa-sync-alt mr-1"></i> Refresh
             </button>
-            <button id="export-excel-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+            <button id="export-excel-btn" class="btn btn-success">
               <i class="fas fa-file-excel mr-1"></i> Excel
             </button>
-            <button id="export-pdf-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+            <button id="export-pdf-btn" class="btn btn-danger">
               <i class="fas fa-file-pdf mr-1"></i> PDF
             </button>
             <div class="relative">
-              <input type="text" id="search-input" placeholder="Cari data..." class="pl-8 pr-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+              <input type="text" id="search-input" placeholder="Cari data..." class="form-control pl-8 pr-3 py-1">
               <i class="fas fa-search absolute left-2 top-2 text-gray-400"></i>
             </div>
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Urutkan Tanggal</label>
-            <select id="sort-tanggal" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            <label class="form-label">Urutkan Tanggal</label>
+            <select id="sort-tanggal" class="form-control">
               <option value="asc">Terlama ke Terbaru</option>
               <option value="desc">Terbaru ke Terlama</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Filter Status</label>
-            <select id="filter-status" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            <label class="form-label">Filter Status</label>
+            <select id="filter-status" class="form-control">
               <option value="">Semua Status</option>
               <option>OK</option><option>CANCEL</option><option>NO ACC</option><option>VERIFIKASI</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Awal</label>
-            <input type="text" id="filter-tanggal-awal" class="tanggal-input w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+            <label class="form-label">Tanggal Awal</label>
+            <input type="text" id="filter-tanggal-awal" class="tanggal-input form-control" placeholder="DD/MM/YYYY">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Akhir</label>
-            <input type="text" id="filter-tanggal-akhir" class="tanggal-input w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+            <label class="form-label">Tanggal Akhir</label>
+            <input type="text" id="filter-tanggal-akhir" class="tanggal-input form-control" placeholder="DD/MM/YYYY">
           </div>
         </div>
         <div class="table-scroll">
-          <table id="data-table" class="min-w-full divide-y divide-gray-200">
+          <table id="data-table" class="table">
             <thead class="bg-gray-50 sticky-top">
               <tr>
                 <th class="sortable px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-col="id" aria-sort="none">ID <span class="arrow"></span></th>
@@ -265,26 +648,26 @@
         </div>
       </div>
     </section>
-
+    
     <section id="vendor-section" class="tab-content section-hidden">
-      <div class="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
+      <div class="card">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-          <h2 class="text-lg md:text-xl font-semibold text-gray-800 mb-2 md:mb-0">Data Vendor (Semua Data)</h2>
+          <h2 class="text-lg md:text-xl font-semibold gold-text mb-2 md:mb-0">Data Vendor (Semua Data)</h2>
           <div class="flex flex-wrap gap-2">
-            <button id="vendor-refresh-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+            <button id="vendor-refresh-btn" class="btn btn-primary">
               <i class="fas fa-sync-alt mr-1"></i> Refresh
             </button>
-            <button id="vendor-export-excel-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+            <button id="vendor-export-excel-btn" class="btn btn-success">
               <i class="fas fa-file-excel mr-1"></i> Excel
             </button>
-            <button id="vendor-export-pdf-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+            <button id="vendor-export-pdf-btn" class="btn btn-danger">
               <i class="fas fa-file-pdf mr-1"></i> PDF
             </button>
-            <button id="vendor-export-jpeg-btn" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+            <button id="vendor-export-jpeg-btn" class="btn btn-warning">
               <i class="fas fa-file-image mr-1"></i> JPEG
             </button>
             <div class="relative">
-              <input type="text" id="vendor-search-input" placeholder="Cari (NPK/Nama/Telp/Tipe/Alamat)..." class="pl-8 pr-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+              <input type="text" id="vendor-search-input" placeholder="Cari (NPK/Nama/Telp/Tipe/Alamat)..." class="form-control pl-8 pr-3 py-1">
               <i class="fas fa-search absolute left-2 top-2 text-gray-400"></i>
             </div>
           </div>
@@ -293,28 +676,28 @@
           <div class="vendor-filter-title">Filter Data Vendor</div>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Urutkan Tanggal</label>
-              <select id="vendor-sort-tanggal" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+              <label class="form-label">Urutkan Tanggal</label>
+              <select id="vendor-sort-tanggal" class="form-control">
                 <option value="desc">Terbaru ke Terlama</option>
                 <option value="asc">Terlama ke Terbaru</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Filter Tipe HP</label>
-              <select id="vendor-filter-tipehp" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+              <label class="form-label">Filter Tipe HP</label>
+              <select id="vendor-filter-tipehp" class="form-control">
                 <option value="">Semua Tipe</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Filter Status</label>
-              <select id="vendor-filter-status" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+              <label class="form-label">Filter Status</label>
+              <select id="vendor-filter-status" class="form-control">
                 <option value="">Semua Status</option>
                 <option value="OK">OK</option><option value="CANCEL">CANCEL</option><option value="NO ACC">NO ACC</option><option value="VERIFIKASI">VERIFIKASI</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
-              <select id="vendor-filter-cheapest" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+              <label class="form-label">Vendor</label>
+              <select id="vendor-filter-cheapest" class="form-control">
                 <option value="">Semua</option>
                 <option value="ALF">Alfacell</option>
                 <option value="SA">Sentral Abadi Jaya</option>
@@ -322,22 +705,22 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Awal</label>
-              <input type="text" id="vendor-tanggal-awal" class="tanggal-input w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+              <label class="form-label">Tanggal Awal</label>
+              <input type="text" id="vendor-tanggal-awal" class="tanggal-input form-control" placeholder="DD/MM/YYYY">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Akhir</label>
-              <input type="text" id="vendor-tanggal-akhir" class="tanggal-input w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+              <label class="form-label">Tanggal Akhir</label>
+              <input type="text" id="vendor-tanggal-akhir" class="tanggal-input form-control" placeholder="DD/MM/YYYY">
             </div>
             <div class="lg:col-span-1 flex items-end">
-              <button id="vendor-clear-filter" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm transition duration-300 w-full">
+              <button id="vendor-clear-filter" class="btn btn-secondary w-full">
                 <i class="fas fa-eraser mr-1"></i> Bersihkan Filter
               </button>
             </div>
           </div>
         </div>
         <div class="table-scroll">
-          <table id="vendor-table" class="min-w-full divide-y divide-gray-200">
+          <table id="vendor-table" class="table">
             <thead class="bg-gray-50 sticky-top">
               <tr>
                 <th class="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
@@ -358,48 +741,48 @@
         </div>
       </div>
     </section>
-
+    
     <section id="compare-section" class="tab-content section-hidden">
-      <div class="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
+      <div class="card">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-          <h2 class="text-lg md:text-xl font-semibold text-gray-800 mb-2 md:mb-0">Pembanding Harga Vendor Karyawan</h2>
+          <h2 class="text-lg md:text-xl font-semibold gold-text mb-2 md:mb-0">Pembanding Harga Vendor Karyawan</h2>
           <p class="text-xs text-gray-500 mt-1">Hanya menampilkan data dengan status <strong>OK</strong>.</p>
           <div class="flex flex-wrap gap-2">
-            <button id="compare-export-excel-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+            <button id="compare-export-excel-btn" class="btn btn-success">
               <i class="fas fa-file-excel mr-1"></i> Excel
             </button>
-            <button id="compare-export-pdf-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+            <button id="compare-export-pdf-btn" class="btn btn-danger">
               <i class="fas fa-file-pdf mr-1"></i> PDF
             </button>
-            <button id="compare-export-jpeg-btn" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-md text-sm transition duration-300">
+            <button id="compare-export-jpeg-btn" class="btn btn-warning">
               <i class="fas fa-file-image mr-1"></i> JPEG
             </button>
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Awal</label>
-            <input type="text" id="compare-tanggal-awal" class="tanggal-input w-full px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+            <label class="form-label">Tanggal Awal</label>
+            <input type="text" id="compare-tanggal-awal" class="tanggal-input form-control" placeholder="DD/MM/YYYY">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Akhir</label>
-            <input type="text" id="compare-tanggal-akhir" class="tanggal-input w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+            <label class="form-label">Tanggal Akhir</label>
+            <input type="text" id="compare-tanggal-akhir" class="tanggal-input form-control" placeholder="DD/MM/YYYY">
           </div>
           <div class="flex items-end">
-            <button id="compare-clear-filter" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm transition duration-300">
+            <button id="compare-clear-filter" class="btn btn-secondary w-full">
               <i class="fas fa-eraser mr-1"></i> Bersihkan Filter
             </button>
           </div>
         </div>
         <div class="table-scroll">
-          <table id="compare-table" class="min-w-full divide-y divide-gray-200">
+          <table id="compare-table" class="table">
             <thead class="bg-gray-50 sticky-top">
               <tr>
                 <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
                 <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">NPK</th>
                 <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
                 <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipe HP</th>
-                <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase"></th>
+                <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Merek</th>
                 <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga — <span id="th-alf"></span></th>
                 <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga — <span id="th-sa"></span></th>
                 <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
@@ -413,7 +796,7 @@
         </div>
       </div>
     </section>
-
+    
     <section id="dashboard-section" class="tab-content section-hidden">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
         <div id="card-total" class="metric-card" role="button" tabindex="0" data-qfilter="ALL" aria-label="Total HP">
@@ -434,41 +817,40 @@
         </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white rounded-lg shadow-md p-4 md:p-6">
-          <h3 class="text-lg font-semibold mb-4 text-gray-800">Distribusi Tipe HP</h3>
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4 gold-text">Distribusi Tipe HP</h3>
           <div class="h-64"><canvas id="tipe-hp-chart"></canvas></div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-4 md:p-6">
-          <h3 class="text-lg font-semibold mb-4 text-gray-800">Status HP</h3>
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4 gold-text">Status HP</h3>
           <div class="h-64"><canvas id="status-chart"></canvas></div>
         </div>
       </div>
     </section>
-
+    
     <section id="settings-section" class="tab-content section-hidden">
-    <div class="mb-6">
-      <h3 class="text-md font-medium mb-2 text-gray-700">Perbaikan Vendor</h3>
-      <p class="text-sm text-gray-600 mb-3">
-        Buka halaman untuk memperbaiki/menyesuaikan data vendor.
-      </p>
-      <a href="vendor.html"
-         class="inline-flex items-center bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md transition duration-300">
-        <span class="fa-solid fa-screwdriver-wrench mr-2"></span>
-        Perbaikan Vendor
-      </a>
-    </div>
-
-      <div class="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
-        <h2 class="text-lg md:text-xl font-semibold mb-4 text-gray-800">Pengaturan Aplikasi</h2>
+      <div class="mb-6">
+        <h3 class="text-md font-medium mb-2 gold-text">Perbaikan Vendor</h3>
+        <p class="text-sm text-gray-600 mb-3">
+          Buka halaman untuk memperbaiki/menyesuaikan data vendor.
+        </p>
+        <a href="vendor.html"
+           class="btn btn-warning">
+          <span class="fa-solid fa-screwdriver-wrench mr-2"></span>
+          Perbaikan Vendor
+        </a>
+      </div>
+      <div class="card">
+        <h2 class="text-lg md:text-xl font-semibold mb-4 gold-text">Pengaturan Aplikasi</h2>
         <div class="mb-6">
-          <h3 class="text-md font-medium mb-2 text-gray-700">Refresh Data</h3>
+          <h3 class="text-md font-medium mb-2 gold-text">Refresh Data</h3>
           <p class="text-sm text-gray-600 mb-3">Refresh semua data perhitungan masa cicilan</p>
-          <button id="refresh-all-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-300">
+          <button id="refresh-all-btn" class="btn btn-primary">
             <i class="fas fa-sync-alt mr-2"></i>Refresh Semua Data
           </button>
         </div>
         <div class="mb-6">
-          <h3 class="text-md font-medium mb-2 text-gray-700">Tentang Aplikasi</h3>
+          <h3 class="text-md font-medium mb-2 gold-text">Tentang Aplikasi</h3>
           <div class="bg-gray-50 p-4 rounded-md">
             <p class="text-sm text-gray-700 mb-2"><strong>Nama Aplikasi:</strong> Aplikasi HP – Versi Pro</p>
             <p class="text-sm text-gray-700 mb-2"><strong>Versi:</strong> 2025.08.22</p>
@@ -478,70 +860,69 @@
       </div>
     </section>
   </div>
-
-  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-screen overflow-y-auto">
-      <div class="p-4 md:p-6">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg md:text-xl font-semibold text-gray-800">Edit Data HP</h3>
-          <button id="close-modal-btn" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
-        </div>
+  
+  <div id="edit-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Data HP</h3>
+        <button id="close-modal-btn" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
         <form id="edit-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input type="hidden" id="edit-id">
           <input type="hidden" id="edit-row">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-            <input type="text" id="edit-tanggal" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY" required>
+          <div class="form-group">
+            <label class="form-label">Tanggal</label>
+            <input type="text" id="edit-tanggal" class="tanggal-input form-control" placeholder="DD/MM/YYYY" required>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">NPK</label>
-            <input type="text" id="edit-npk" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+          <div class="form-group">
+            <label class="form-label">NPK</label>
+            <input type="text" id="edit-npk" class="form-control" required>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">No. Telp</label>
-            <input type="text" id="edit-notelp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+          <div class="form-group">
+            <label class="form-label">No. Telp</label>
+            <input type="text" id="edit-notelp" class="form-control" required>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Cicilan (bulan)</label>
-            <input type="number" id="edit-cicilan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" min="1" required>
+          <div class="form-group">
+            <label class="form-label">Cicilan (bulan)</label>
+            <input type="number" id="edit-cicilan" class="form-control" min="1" required>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tipe HP</label>
-            <select id="edit-tipehp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+          <div class="form-group">
+            <label class="form-label">Tipe HP</label>
+            <select id="edit-tipehp" class="form-control" required>
               <option value="">Pilih Tipe HP</option>
             </select>
           </div>
-          <!-- EDIT/MODAL -->
-          <div id="edit-tipehp-custom-wrap" class="mt-2 hidden">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tulis Tipe HP</label>
-            <input type="text" id="edit-tipehp-custom" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Contoh: SAMSUNG A06 4/64">
-            <p class="text-xs text-gray-500 mt-1">Isi ini jika memilih “LAINNYA”.</p>
+          <div id="edit-tipehp-custom-wrap" class="form-group hidden">
+            <label class="form-label">Tulis Tipe HP</label>
+            <input type="text" id="edit-tipehp-custom" class="form-control" placeholder="Contoh: SAMSUNG A06 4/64">
+            <p class="text-xs text-gray-500 mt-1">Isi ini jika memilih "LAINNYA".</p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Kirim</label>
-            <input type="text" id="edit-alamat" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+          <div class="form-group">
+            <label class="form-label">Alamat Kirim</label>
+            <input type="text" id="edit-alamat" class="form-control" required>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select id="edit-status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select id="edit-status" class="form-control">
               <option value="">Pilih Status</option>
               <option>OK</option><option>CANCEL</option><option>NO ACC</option><option>VERIFIKASI</option>
             </select>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
-            <input type="text" id="edit-keterangan" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+          <div class="form-group">
+            <label class="form-label">Keterangan</label>
+            <input type="text" id="edit-keterangan" class="form-control">
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Stop Mulai</label>
-            <input type="text" id="edit-stop-mulai" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+          <div class="form-group">
+            <label class="form-label">Stop Mulai</label>
+            <input type="text" id="edit-stop-mulai" class="tanggal-input form-control" placeholder="DD/MM/YYYY">
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Lanjut Mulai</label>
-            <input type="text" id="edit-lanjut-mulai" class="tanggal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="DD/MM/YYYY">
+          <div class="form-group">
+            <label class="form-label">Lanjut Mulai</label>
+            <input type="text" id="edit-lanjut-mulai" class="tanggal-input form-control" placeholder="DD/MM/YYYY">
           </div>
           <div class="md:col-span-2">
-            <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-md transition duration-300">
+            <button type="submit" class="btn btn-warning w-full">
               <i class="fas fa-save mr-2"></i>Update Data
             </button>
           </div>
@@ -549,23 +930,22 @@
       </div>
     </div>
   </div>
-
-  <div id="notification" class="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-md transform transition-transform duration-300 translate-y-20 opacity-0 flex items-start">
-    <div id="notification-icon" class="mr-3 mt-1"></div>
+  
+  <div id="notification" class="notification">
+    <div id="notification-icon" class="notification-icon"></div>
     <div>
       <h4 id="notification-title" class="font-medium text-gray-800"></h4>
       <p id="notification-message" class="text-sm text-gray-600 mt-1"></p>
     </div>
-    <button id="close-notification" class="ml-4 text-gray-400 hover:text-gray-600">
+    <button id="close-notification" class="notification-close">
       <i class="fas fa-times"></i>
     </button>
   </div>
-
+  
   <script>
     // =================================== KONFIGURASI APLIKASI ===================================
     const ENDPOINT = 'https://script.google.com/macros/s/AKfycbz191HJTNAUPQ2s5oNrehy-JKj-89_rzSmtGywtlq_1wkFVibszGrV2prN90Z0GAG2g/exec';
     const PRICE_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwhTQTP_2GUwDNbEpDLgC1WorncAYraE8qAkpgo3UyYc_y1O9rlQXYwHQs5XkYZhxRfrA/exec';
-
     // Dynamic vendor labels (loaded from PRICE_ENDPOINT)
     let VENDOR_LABEL_ALF = 'Alfacell';
     let VENDOR_LABEL_SA  = 'Sentral Abadi Jaya';
@@ -580,7 +960,6 @@
         window.location.href = 'index.html';
       }
     })();
-
     // =================================== VARIABEL GLOBAL UNTUK DATA & STATE ===================================
     let allData = [];
     let filteredData = [];
@@ -593,14 +972,21 @@
     // Flag untuk status loading data dan harga
     let dataReady = false;
     let priceReady = false;
-
     // DB HARGA VENDOR (DINAMIS DARI PRICE_ENDPOINT)
     let vendorPrices = { alfacell: [], sentral: [] };
     let vendorIndex  = { alfacell: new Map(), sentral: new Map() };
-
     // =================================== FUNGSI-FUNGSI UTAMA UNTUK OPERASI DATA ===================================
-
+    function showLoadingOverlay(show) {
+      const overlay = document.getElementById('loading-overlay');
+      if (show) {
+        overlay.classList.add('show');
+      } else {
+        overlay.classList.remove('show');
+      }
+    }
+    
     function loadData(){
+      showLoadingOverlay(true);
       showNotification('info','Memuat Data','Mengambil data dari server...');
       $.getJSON(ENDPOINT, { action:'getAll' })
         .done(res => {
@@ -616,10 +1002,13 @@
           } else {
             showNotification('error','Gagal', res.message || 'Kesalahan saat memuat data');
           }
+          showLoadingOverlay(false);
         })
-        .fail(() => showNotification('error','Kesalahan','Tidak dapat terhubung ke server'));
+        .fail(() => {
+          showNotification('error','Kesalahan','Tidak dapat terhubung ke server');
+          showLoadingOverlay(false);
+        });
     }
-
     function submitForm(){
       if (!$('#angsuran-warning-input').hasClass('hidden') && !$('#angsuran-ack-input').is(':checked')) {
         showNotification('warning','Tindakan Diblokir','Centang "Saya paham, lanjutkan" sebelum menyimpan.');
@@ -640,6 +1029,7 @@
         keterangan: $('#keterangan').val(),
         status: $('#status').val()
       };
+      showLoadingOverlay(true);
       showNotification('info','Menyimpan','Mengirim data...');
       $.post(ENDPOINT, data, null, 'json')
         .done(res => {
@@ -653,10 +1043,13 @@
           } else {
             showNotification('error','Gagal', res.message || 'Kesalahan menyimpan data');
           }
+          showLoadingOverlay(false);
         })
-        .fail(()=>showNotification('error','Kesalahan','Tidak dapat terhubung ke server'));
+        .fail(() => {
+          showNotification('error','Kesalahan','Tidak dapat terhubung ke server');
+          showLoadingOverlay(false);
+        });
     }
-
     function updateData(){
       const tipeFinal = getFinalTipeValue('#edit-tipehp', '#edit-tipehp-custom');
       if (!tipeFinal){
@@ -678,48 +1071,73 @@
         stop_mulai: $('#edit-stop-mulai').val(),
         lanjut_mulai: $('#edit-lanjut-mulai').val()
       };
+      showLoadingOverlay(true);
       showNotification('info','Memperbarui','Mengirim perubahan...');
       $.post(ENDPOINT, data, null, 'json')
         .done(res => {
           if (res.status === 'success') {
-            $('#edit-modal').addClass('hidden');
+            $('#edit-modal').removeClass('show');
             loadData();
             showNotification('success','Berhasil','Data diperbarui');
           } else {
             showNotification('error','Gagal', res.message || 'Kesalahan memperbarui data');
           }
+          showLoadingOverlay(false);
         })
-        .fail(()=>showNotification('error','Kesalahan','Tidak dapat terhubung ke server'));
+        .fail(() => {
+          showNotification('error','Kesalahan','Tidak dapat terhubung ke server');
+          showLoadingOverlay(false);
+        });
     }
-
     function refreshAllData(){
+      showLoadingOverlay(true);
       showNotification('info','Refresh','Memproses perhitungan ulang...');
       $.post(ENDPOINT, { action:'refreshAll' }, null, 'json')
         .done(res => {
-          if (res.status === 'success') { loadData(); showNotification('success','Berhasil', res.message || 'Data direfresh'); }
-          else { showNotification('error','Gagal', res.message || 'Kesalahan saat refresh'); }
+          if (res.status === 'success') { 
+            loadData(); 
+            showNotification('success','Berhasil', res.message || 'Data direfresh'); 
+          } else { 
+            showNotification('error','Gagal', res.message || 'Kesalahan saat refresh'); 
+          }
+          showLoadingOverlay(false);
         })
-        .fail(()=>showNotification('error','Kesalahan','Tidak dapat terhubung ke server'));
+        .fail(() => {
+          showNotification('error','Kesalahan','Tidak dapat terhubung ke server');
+          showLoadingOverlay(false);
+        });
     }
-
     // =================================== FUNGSI-FUNGSI PEMBANTU (HELPERS) ===================================
     function showNotification(type,title,message){
       const n = $('#notification'), icon = $('#notification-icon'), t=$('#notification-title'), m=$('#notification-message');
       icon.empty();
-      if(type==='success') icon.append('<i class="fas fa-check-circle text-green-500 text-xl"></i>');
-      else if(type==='error') icon.append('<i class="fas fa-exclamation-circle text-red-500 text-xl"></i>');
-      else if(type==='warning') icon.append('<i class="fas fa-exclamation-triangle text-yellow-500 text-xl"></i>');
-      else icon.append('<i class="fas fa-info-circle text-blue-500 text-xl"></i>');
+      
+      // Remove all notification classes
+      n.removeClass('notification-success notification-error notification-warning notification-info');
+      
+      if(type==='success') {
+        icon.append('<i class="fas fa-check-circle text-green-500 text-xl"></i>');
+        n.addClass('notification-success');
+      } else if(type==='error') {
+        icon.append('<i class="fas fa-exclamation-circle text-red-500 text-xl"></i>');
+        n.addClass('notification-error');
+      } else if(type==='warning') {
+        icon.append('<i class="fas fa-exclamation-triangle text-yellow-500 text-xl"></i>');
+        n.addClass('notification-warning');
+      } else {
+        icon.append('<i class="fas fa-info-circle text-blue-500 text-xl"></i>');
+        n.addClass('notification-info');
+      }
+      
       t.text(title); m.text(message);
-      n.removeClass('translate-y-20 opacity-0');
-      setTimeout(()=>n.addClass('translate-y-20 opacity-0'), 5000);
+      n.addClass('show');
+      setTimeout(()=>n.removeClass('show'), 5000);
     }
     
     function isAndroidWebView(){
       const ua = navigator.userAgent || '';
       return /Android/i.test(ua) && /wv|Version\/\d+\.\d+ Chrome\/\d+.*Mobile Safari\/\d+/i.test(ua);
     }
-
     async function downloadBlob(blob, name){
       try { if (typeof saveAs === 'function' && !isAndroidWebView()) { saveAs(blob, name); return; } } catch(e){}
       try {
@@ -735,19 +1153,16 @@
         setTimeout(()=>URL.revokeObjectURL(url), 1500);
       }
     }
-
     function parseDate(s){
       if(!s) return null; const p = String(s).split('/'); if(p.length!==3) return null;
       return new Date(parseInt(p[2],10), parseInt(p[1],10)-1, parseInt(p[0],10));
     }
-
     function parseMasaCicilan(s){
       if (!s) return {cur:null, tot:null};
       const m = String(s).trim().match(/^(\d+)\s*\/\s*(\d+)$/);
       if (!m) return {cur:null, tot:null};
       return {cur:parseInt(m[1],10), tot:parseInt(m[2],10)};
     }
-
     function checkAngsuranOnInput(npk){
       const warn = $('#angsuran-warning-input'), list = $('#angsuran-list'), ack = $('#angsuran-ack-input');
       if (!npk) { hideAngsuranWarning(); return; }
@@ -764,13 +1179,11 @@
         warn.removeClass('hidden'); ack.prop('checked', false); toggleSubmitDisabled(true);
       } else { hideAngsuranWarning(); }
     }
-
     function hideAngsuranWarning(){
       $('#angsuran-warning-input').addClass('hidden');
       $('#angsuran-ack-input').prop('checked', false);
       toggleSubmitDisabled(false);
     }
-
     function toggleSubmitDisabled(dis){
       $('#btn-submit').prop('disabled', dis).toggleClass('opacity-50 cursor-not-allowed', dis);
     }
@@ -821,9 +1234,7 @@
     function getHargaFast(which, typeName){
       const key = normName(typeName);
       const map = vendorIndex[which];
-
       if (map.has(key)) return map.get(key);
-
       const tok = key.split(' ');
       let bestV = null, bestScore = 0;
       for (const [k, v] of map.entries()){
@@ -871,8 +1282,8 @@
         $vf.val(keep);
       }
     }
-
     async function loadPriceDB(){
+      showLoadingOverlay(true);
       showNotification('info', 'Memuat Harga', 'Mengambil database harga vendor...');
       try{
         const url = PRICE_ENDPOINT.includes('?') ? PRICE_ENDPOINT : PRICE_ENDPOINT + '?action=all';
@@ -882,7 +1293,6 @@
                    : Array.isArray(json?.rows) ? json.rows
                    : Array.isArray(json)        ? json
                    : [];
-
         
         // Pick up vendor labels if provided by API
         try {
@@ -937,19 +1347,19 @@
           priceReady = true;
           showNotification('success', 'Harga Dimuat', 'Database harga vendor berhasil dimuat.');
         }
-
         populateTipeOptionsFromPriceDB(rows);
         populateVendorFilterTipeFromPriceDB(rows);
         updateVendorLabelsUI();
         if (dataReady) renderCompareTable();
         console.log('Vendor price DB loaded:', vendorPrices);
+        showLoadingOverlay(false);
       } catch(err){
         priceReady = false;
         console.warn('Gagal memuat PRICE_ENDPOINT. Cek koneksi atau URL.', err);
         showNotification('error', 'Gagal Memuat Harga', 'Tidak dapat terhubung ke database harga vendor.');
+        showLoadingOverlay(false);
       }
     }
-
     function populateTipeOptionsFromPriceDB(rows){
       const set = new Set();
       rows.forEach(r=>{
@@ -966,7 +1376,6 @@
       fill($('#tipehp'));
       fill($('#edit-tipehp'));
     }
-
     function populateVendorFilterTipeFromPriceDB(rows){
       const set = new Set();
       rows.forEach(r=>{
@@ -979,7 +1388,6 @@
       tipes.forEach(t => $sel.append(`<option value="${t}">${t}</option>`));
       $sel.append('<option value="LAINNYA">LAINNYA</option>');
     }
-
     // =================================== FUNGSI TAB DATA HP ===================================
     function filterData(){
       const q = ($('#search-input').val() || '').toLowerCase();
@@ -1004,7 +1412,6 @@
       renderTable();
       updateDashboardCounters();
     }
-
     function getSortValue(it, col){
       switch(col){
         case 'id':     return parseInt(it.id || it.row || 0, 10) || 0;
@@ -1019,7 +1426,6 @@
         default: return '';
       }
     }
-
     function sortData(){
       filteredData.sort((a,b)=>{
         const A = getSortValue(a, sortColumn);
@@ -1029,7 +1435,6 @@
         return 0;
       });
     }
-
     function updateSortIndicators(){
       $('#data-table th.sortable').attr('aria-sort', 'none');
       $('#data-table th.sortable').each(function(){
@@ -1039,7 +1444,6 @@
         }
       });
     }
-
     function thSortHandler(){
       const col = $(this).data('col');
       if (!col) return;
@@ -1054,7 +1458,6 @@
       sortData();
       renderTable();
     }
-
     function renderTable(){
       const $tbody = $('#data-table tbody').empty();
       if (!filteredData.length){
@@ -1106,7 +1509,6 @@
       $('#showing-count').text(filteredData.length);
       $('#total-count').text(allData.length);
     }
-
     function editData(id,row){
       const it = allData.find(d => (d.id && d.id==id) || (d.row && d.row==row));
       if (!it) return;
@@ -1121,8 +1523,7 @@
       $('#edit-status').val(it.status || '');
       $('#edit-stop-mulai').val(it.stopMulai || '');
       $('#edit-lanjut-mulai').val(it.lanjutMulai || '');
-      $('#edit-modal').removeClass('hidden');
-
+      $('#edit-modal').addClass('show');
       const t = it.tipehp || '';
       const $sel = $('#edit-tipehp');
       if ($sel.find(`option`).filter(function(){ return $(this).text() === t && $(this).val() === t; }).length){
@@ -1135,6 +1536,7 @@
     
     async function exportToExcel(){
       if (!filteredData.length) { showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
+      showLoadingOverlay(true);
       showNotification('info','Ekspor','Menyiapkan Excel...');
       const tA = $('#filter-tanggal-awal').val() || 'Awal';
       const tB = $('#filter-tanggal-akhir').val() || 'Akhir';
@@ -1153,10 +1555,11 @@
       const ab = XLSX.write(wb, { bookType:'xlsx', type:'array' });
       await downloadBlob(new Blob([ab], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
       showNotification('success','Berhasil','Excel dibuat.');
+      showLoadingOverlay(false);
     }
-
     async function exportToPDF(){
       if (!filteredData.length) { showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
+      showLoadingOverlay(true);
       showNotification('info','Ekspor','Menyiapkan PDF...');
       const tA = $('#filter-tanggal-awal').val() || 'Awal';
       const tB = $('#filter-tanggal-akhir').val() || 'Akhir';
@@ -1174,13 +1577,13 @@
       ]);
       doc.autoTable({
         head:[['ID','Tanggal','NPK','Nama','No. Telp','Cicilan','Tipe HP','Status','Masa Cicilan']],
-        body, startY:40, styles:{ fontSize:8, cellPadding:3 }, headStyles:{ fillColor:[245,158,11], textColor:255 }
+        body, startY:40, styles:{ fontSize:8, cellPadding:3 }, headStyles:{ fillColor:[212, 175, 55], textColor:255 }
       });
       const safe = `Data_HP_${tA.replace(/\//g,'')}_${tB.replace(/\//g,'')}_${sF}_${ds.replaceAll('/','')}.pdf`;
       await downloadBlob(doc.output('blob'), safe);
       showNotification('success','Berhasil','PDF dibuat.');
+      showLoadingOverlay(false);
     }
-
     // =================================== FUNGSI TAB VENDOR ===================================
     function syncVendorFromAll(){
       vendorData = (allData||[]).map(x=>{
@@ -1196,7 +1599,6 @@
       });
       vendorFiltered = [...vendorData];
     }
-
     function filterVendor(){
       const q = ($('#vendor-search-input').val() || '').toLowerCase();
       const tAwal = $('#vendor-tanggal-awal').val();
@@ -1205,7 +1607,6 @@
       const stat = ($('#vendor-filter-status').val() || '').toUpperCase();
       const cheapest = $('#vendor-filter-cheapest').val();
       const dir = $('#vendor-sort-tanggal').val() || 'desc';
-
       vendorFiltered = vendorData.filter(r=>{
         let ok = true;
         if (tAwal){ const a = parseDate(tAwal), t = parseDate(r.tanggal); ok = ok && (!a || (t && t >= a)); }
@@ -1224,7 +1625,6 @@
         );
         return ok;
       });
-
       vendorFiltered.sort((a,b)=>{
         const A = parseDate(a.tanggal) || new Date(0);
         const B = parseDate(b.tanggal) || new Date(0);
@@ -1234,7 +1634,6 @@
       });
       renderVendorTable();
     }
-
     function renderVendorTable(){
       const $tb = $('#vendor-table tbody').empty();
       if (!vendorFiltered.length){
@@ -1250,7 +1649,6 @@
           else statusBadge = '<span class="badge" style="background:#f3f4f6;color:#4b5563"><i class="fas fa-question-circle"></i> -</span>';
           
           const vendorDisplay = v.vendorInfo?.vendor || '-';
-
           $tb.append(`<tr>
             <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${v.tanggal}</td>
             <td class="px-2 md:px-4 py-3 text-sm text-gray-900">${v.npk}</td>
@@ -1269,6 +1667,7 @@
     
     async function exportVendorToExcel(){
       if (!vendorFiltered.length){ showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
+      showLoadingOverlay(true);
       showNotification('info','Ekspor','Menyiapkan Excel (vendor)...');
       const tA = $('#vendor-tanggal-awal').val() || 'Awal';
       const tB = $('#vendor-tanggal-akhir').val() || 'Akhir';
@@ -1284,10 +1683,11 @@
       const ab = XLSX.write(wb, { bookType:'xlsx', type:'array' });
       await downloadBlob(new Blob([ab], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
       showNotification('success','Berhasil','Excel vendor dibuat.');
+      showLoadingOverlay(false);
     }
-
     async function exportVendorToPDF(){
       if (!vendorFiltered.length){ showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
+      showLoadingOverlay(true);
       showNotification('info','Ekspor','Menyiapkan PDF (vendor)...');
       const { jsPDF } = window.jspdf; const doc = new jsPDF();
       doc.setFontSize(16); doc.text('Data HP - Vendor (Semua Data)', 105, 15, { align:'center' });
@@ -1301,21 +1701,22 @@
       doc.text(`Periode: ${tA} - ${tB}`, 105, 27, { align:'center' });
       doc.text(`Tipe HP: ${tipe} | Status: ${stat}`, 105, 32, { align:'center' });
       const body = vendorFiltered.map(r => [r.tanggal, r.npk, r.nama, r.notelp, r.tipehp, r.status, r.alamat]);
-      doc.autoTable({ head: [['Tanggal','NPK','Nama','No. Telp','Tipe','Status','Alamat Kirim']], body, startY: 37, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [245,158,11], textColor: 255 } });
+      doc.autoTable({ head: [['Tanggal','NPK','Nama','No. Telp','Tipe','Status','Alamat Kirim']], body, startY: 37, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [212, 175, 55], textColor: 255 } });
       const safe = `Vendor_HP_${tA.replace(/\//g,'')}_${tB.replace(/\//g,'')}_${tipe}_${stat}_${ds.replaceAll('/','')}.pdf`;
       await downloadBlob(doc.output('blob'), safe);
       showNotification('success','Berhasil','PDF vendor dibuat.');
+      showLoadingOverlay(false);
     }
-
     async function exportVendorToJPEG(){
       if (!vendorFiltered.length){ showNotification('warning','Peringatan','Tidak ada data untuk diekspor'); return; }
+      showLoadingOverlay(true);
       showNotification('info','Ekspor','Menyiapkan JPEG (vendor)...');
       const cont = document.createElement('div');
       cont.className = 'vendor-capture-container';
       cont.style.width = '1000px';
       const title = document.createElement('div'); title.className='vendor-capture-title'; title.textContent='Data HP - Vendor (Semua Data)';
       const info = document.createElement('div'); info.className='vendor-capture-date';
-      const d = new Date(); const ds = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+      const d = new Date(); const ds = `${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()}`;
       const tA = $('#vendor-tanggal-awal').val() || 'Awal';
       const tB = $('#vendor-tanggal-akhir').val() || 'Akhir';
       const tipe = $('#vendor-filter-tipehp').val() || 'Semua';
@@ -1335,17 +1736,17 @@
           const safe = `Vendor_HP_${tA.replace(/\//g,'')}_${tB.replace(/\//g,'')}_${tipe}_${stat}_${ds.replaceAll('/','')}.jpg`;
           await downloadBlob(blob, safe);
           showNotification('success','Berhasil','JPEG vendor dibuat.');
+          showLoadingOverlay(false);
         }, 'image/jpeg', 0.9);
       } catch(e) {
         document.body.removeChild(cont);
         console.error(e);
         showNotification('error','Gagal','Kesalahan saat membuat JPEG');
+        showLoadingOverlay(false);
       }
     }
-
     // =================================== FUNGSI TAB PEMBANDING VENDOR ===================================
     function formatHarga(h){ return h!=null ? `Rp ${Number(h).toLocaleString('id-ID')}` : '-'; }
-
     function guessBrand(name){
       const u = normName(name);
       const map = [
@@ -1356,26 +1757,13 @@
       for (const [k,v] of map){ if (u.startsWith(k+' ')) return v; }
       return (u.split(' ')[0]||'LAINNYA');
     }
-
-    function renderCompareTable(){
-      const $tbody = $('#compare-table tbody').empty();
-
-      if (!dataReady || !priceReady){
-        $tbody.append('<tr><td colspan="8" class="px-4 py-4 text-center text-gray-400">Memuat...</td></tr>');
-        $('#compare-count').text(0);
-        return;
-      }
-
-      // pastikan header pakai label vendor dinamis
-      updateVendorLabelsUI();
-
+    function getCompareRows(){
       const tAwal  = $('#compare-tanggal-awal').val();
       const tAkhir = $('#compare-tanggal-akhir').val();
       const dAwal  = tAwal  ? parseDate(tAwal)  : null;
       const dAkhir = tAkhir ? parseDate(tAkhir) : null;
       if (dAkhir) dAkhir.setHours(23,59,59,999);
-
-      const rows = (allData||[]).filter(r=>{
+      return (allData||[]).filter(r=>{
         const st = (r.status||'').toUpperCase();
         if (st !== 'OK') return false;
         const tg = parseDate(r.tanggal);
@@ -1383,54 +1771,63 @@
         if (dAkhir && (!tg || tg > dAkhir)) return false;
         return true;
       });
-
+    }
+    function renderCompareTable(){
+      const $tbody = $('#compare-table tbody').empty();
+      if (!dataReady || !priceReady){
+        $tbody.append('<tr><td colspan="8" class="px-4 py-4 text-center text-gray-400">Memuat...</td></tr>');
+        $('#compare-count').text(0);
+        return;
+      }
+      // pastikan header pakai label vendor dinamis
+      updateVendorLabelsUI();
+      const rows = getCompareRows();
       if (!rows.length){
         $tbody.append('<tr><td colspan="8" class="px-4 py-4 text-center text-gray-500">Tidak ada data untuk ditampilkan</td></tr>');
         $('#compare-count').text(0);
         return;
       }
-
       rows.forEach(r=>{
         const c = cheapestForTipe(r.tipehp||'');
-        const tdHargaAlf = c.hargaAlf != null ? c.hargaAlf.toLocaleString() : '-';
-        const tdHargaSa  = c.hargaSa  != null ? c.hargaSa.toLocaleString()  : '-';
+        const merek = guessBrand(r.tipehp||'');
+        const tdHargaAlf = c.hargaAlf != null ? c.hargaAlf.toLocaleString('id-ID') : '-';
+        const tdHargaSa  = c.hargaSa  != null ? c.hargaSa.toLocaleString('id-ID')  : '-';
         $tbody.append(
           `<tr>
             <td class="px-2 py-3 text-sm">${r.tanggal||''}</td>
             <td class="px-2 py-3 text-sm">${r.npk||''}</td>
             <td class="px-2 py-3 text-sm">${r.nama||''}</td>
             <td class="px-2 py-3 text-sm">${r.tipehp||''}</td>
-            <td class="px-2 py-3 text-sm">${r.merek||''}</td>
+            <td class="px-2 py-3 text-sm">${merek}</td>
             <td class="px-2 py-3 text-sm">${tdHargaAlf}</td>
             <td class="px-2 py-3 text-sm">${tdHargaSa}</td>
             <td class="px-2 py-3 text-sm">${c.vendor}</td>
           </tr>`
         );
       });
-
       $('#compare-count').text(rows.length);
     }
-
     async function exportCompareToExcel(){
       const rows = getCompareRows();
       if (!rows.length){ showNotification('warning','Peringatan','Tidak ada data pembanding untuk diekspor'); return; }
+      showLoadingOverlay(true);
       showNotification('info','Ekspor','Menyiapkan Excel (pembanding)...');
       const data = rows.map(d=>{
         const tipe  = d.tipehp || '';
         const merek = guessBrand(tipe);
-        const { vendor, hA, hS } = cheapestForTipe(tipe);
-        const vendorTermurah = vendor === 'ALF' ? VENDOR_LABEL_ALF 
-                             : vendor === 'SA' ? VENDOR_LABEL_SA 
-                             : vendor === 'SAME' ? `${VENDOR_LABEL_ALF} / ${VENDOR_LABEL_SA}`
-                             : '-';
+        const { code, vendor, hargaAlf, hargaSa } = cheapestForTipe(tipe);
+        const vendorTermurah = code === 'ALF' ? VENDOR_LABEL_ALF 
+                            : code === 'SA'  ? VENDOR_LABEL_SA 
+                            : code === 'SAME'? `${VENDOR_LABEL_ALF} / ${VENDOR_LABEL_SA}`
+                            : vendor || '-';
         return {
           'Tanggal': d.tanggal||'',
           'NPK': d.npk||'',
           'Nama': d.nama||'',
           'Tipe HP': tipe,
-          '': merek,
-          [`Harga — ${VENDOR_LABEL_ALF}`]: hA ?? '',
-          [`Harga — ${VENDOR_LABEL_SA}`] : hS ?? '',
+          'Merek': merek,
+          [`Harga — ${VENDOR_LABEL_ALF}`]: (hargaAlf!=null ? hargaAlf : ''),
+          [`Harga — ${VENDOR_LABEL_SA}`] : (hargaSa !=null ? hargaSa  : ''),
           'Vendor': vendorTermurah
         };
       });
@@ -1439,16 +1836,18 @@
       XLSX.utils.book_append_sheet(wb, ws, 'Pembanding');
       const tA = ($('#compare-tanggal-awal').val()||'Awal').replace(/\//g,'');
       const tB = ($('#compare-tanggal-akhir').val()||'Akhir').replace(/\//g,'');
-      const d  = new Date(); const ds = `${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()}`;
+      const d  = new Date(); 
+      const ds = `${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()}`;
       const name = `Pembanding_Vendor_${tA}_${tB}_${ds}.xlsx`;
       const ab = XLSX.write(wb, { bookType:'xlsx', type:'array' });
       await downloadBlob(new Blob([ab], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
       showNotification('success','Berhasil','Excel pembanding dibuat.');
+      showLoadingOverlay(false);
     }
-
     async function exportCompareToPDF(){
       const rows = getCompareRows();
       if (!rows.length){ showNotification('warning','Peringatan','Tidak ada data pembanding untuk diekspor'); return; }
+      showLoadingOverlay(true);
       showNotification('info','Ekspor','Menyiapkan PDF (pembanding)...');
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -1463,26 +1862,31 @@
       const head = [['Tanggal','NPK','Nama','Tipe HP','Merek',`Harga — ${VENDOR_LABEL_ALF}`,`Harga — ${VENDOR_LABEL_SA}`,'Vendor']];
       const body = rows.map(d=>{
         const tipe = d.tipehp||'', merek = guessBrand(tipe);
-        const { vendor, hA, hS } = cheapestForTipe(tipe);
-        const vendLabel = vendor === 'ALF' ? VENDOR_LABEL_ALF 
-                        : vendor === 'SA' ? VENDOR_LABEL_SA 
-                        : vendor === 'SAME' ? `${VENDOR_LABEL_ALF} / ${VENDOR_LABEL_SA}`
-                        : '-';
-        return [d.tanggal||'', d.npk||'', d.nama||'', tipe, merek, formatHarga(hA), formatHarga(hS), vendLabel];
+        const { code, vendor, hargaAlf, hargaSa } = cheapestForTipe(tipe);
+        const vendLabel = code === 'ALF' ? VENDOR_LABEL_ALF 
+                        : code === 'SA'  ? VENDOR_LABEL_SA 
+                        : code === 'SAME'? `${VENDOR_LABEL_ALF} / ${VENDOR_LABEL_SA}`
+                        : vendor || '-';
+        return [
+          d.tanggal||'', d.npk||'', d.nama||'', tipe, merek,
+          formatHarga(hargaAlf), formatHarga(hargaSa), vendLabel
+        ];
       });
       doc.autoTable({
         head:head, body, startY: 34,
-        styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [245,158,11], textColor: 255 }
+        styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [212, 175, 55], textColor: 255 }
       });
       const safe = `Pembanding_Vendor_${tA.replace(/\//g,'')}_${tB.replace(/\//g,'')}_${ds.replaceAll('/','')}.pdf`;
       await downloadBlob(doc.output('blob'), safe);
       showNotification('success','Berhasil','PDF pembanding dibuat.');
+      showLoadingOverlay(false);
     }
-
     async function exportCompareToJPEG(){
       const rows = getCompareRows();
       if (!rows.length){ showNotification('warning','Peringatan','Tidak ada data pembanding untuk diekspor'); return; }
+      showLoadingOverlay(true);
       showNotification('info','Ekspor','Menyiapkan JPEG (pembanding)...');
+      
       const cont = document.createElement('div');
       cont.className = 'vendor-capture-container';
       cont.style.width = '1000px';
@@ -1493,13 +1897,57 @@
       const tA = $('#compare-tanggal-awal').val() || 'Awal';
       const tB = $('#compare-tanggal-akhir').val() || 'Akhir';
       info.textContent = `Tanggal: ${ds} | Periode: ${tA} - ${tB}`;
-      const table = document.getElementById('compare-table').cloneNode(true);
-      table.style.width = '100%'; table.style.borderCollapse = 'collapse'; table.style.fontSize = '12px';
+      
+      const table = document.createElement('table');
+      table.className = 'min-w-full divide-y divide-gray-200';
+      table.innerHTML = `
+        <thead>
+          <tr class="bg-gray-50">
+            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
+            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">NPK</th>
+            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
+            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipe HP</th>
+            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Merek</th>
+            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga — ${VENDOR_LABEL_ALF}</th>
+            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga — ${VENDOR_LABEL_SA}</th>
+            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200"></tbody>
+      `;
+      
+      const tbody = table.querySelector('tbody');
+      rows.forEach(r => {
+        const { code, vendor, hargaAlf, hargaSa } = cheapestForTipe(r.tipehp||'');
+        const merek = guessBrand(r.tipehp||'');
+        const vendLabel = code === 'ALF' ? VENDOR_LABEL_ALF 
+                        : code === 'SA'  ? VENDOR_LABEL_SA 
+                        : code === 'SAME'? `${VENDOR_LABEL_ALF} / ${VENDOR_LABEL_SA}`
+                        : vendor || '-';
+        
+        tbody.innerHTML += `
+          <tr>
+            <td class="px-2 py-3 text-sm">${r.tanggal||''}</td>
+            <td class="px-2 py-3 text-sm">${r.npk||''}</td>
+            <td class="px-2 py-3 text-sm">${r.nama||''}</td>
+            <td class="px-2 py-3 text-sm">${r.tipehp||''}</td>
+            <td class="px-2 py-3 text-sm">${merek}</td>
+            <td class="px-2 py-3 text-sm">${formatHarga(hargaAlf)}</td>
+            <td class="px-2 py-3 text-sm">${formatHarga(hargaSa)}</td>
+            <td class="px-2 py-3 text-sm">${vendLabel}</td>
+          </tr>
+        `;
+      });
       const style = document.createElement('style');
       style.textContent = `table th, table td { border:1px solid #ddd; padding:8px; text-align:left; }
                            table th { background:#f2f2f2; font-weight:bold; } table tr:nth-child(even){ background:#f9f9f9; }`;
-      cont.appendChild(title); cont.appendChild(info); cont.appendChild(style); cont.appendChild(table);
+      cont.appendChild(title);
+      cont.appendChild(info);
+      cont.appendChild(style);
+      cont.appendChild(table);
+      
       document.body.appendChild(cont);
+      
       try{
         const canvas = await html2canvas(cont, { scale: 2, logging:false, useCORS:true });
         canvas.toBlob(async blob => {
@@ -1507,14 +1955,15 @@
           const safe = `Pembanding_Vendor_${tA.replace(/\//g,'')}_${tB.replace(/\//g,'')}_${ds.replaceAll('/','')}.jpg`;
           await downloadBlob(blob, safe);
           showNotification('success','Berhasil','JPEG pembanding dibuat.');
+          showLoadingOverlay(false);
         }, 'image/jpeg', 0.9);
       } catch(e) {
         document.body.removeChild(cont);
         console.error(e);
         showNotification('error','Gagal','Kesalahan saat membuat JPEG');
+        showLoadingOverlay(false);
       }
     }
-
     // =================================== FUNGSI TAB DASHBOARD ===================================
     function updateDashboardCounters(){
       $('#total-hp').text(allData.length);
@@ -1522,7 +1971,6 @@
       $('#status-proses').text(allData.filter(x => x.status==='VERIFIKASI').length);
       $('#status-issues').text(allData.filter(x => ['CANCEL','NO ACC'].includes(x.status||'')).length);
     }
-
     function loadDashboard(){
       updateDashboardCounters();
       const tipeHpCounts = {};
@@ -1536,48 +1984,43 @@
       if (tipeHpChart) tipeHpChart.destroy();
       tipeHpChart = new Chart(ctx1, {
         type:'bar',
-        data:{ labels:Object.keys(tipeHpCounts), datasets:[{ label:'Jumlah HP', data:Object.values(tipeHpCounts), backgroundColor:'rgba(245, 158, 11, 0.7)', borderColor:'rgba(245,158,11,1)', borderWidth:1 }] },
+        data:{ labels:Object.keys(tipeHpCounts), datasets:[{ label:'Jumlah HP', data:Object.values(tipeHpCounts), backgroundColor:'rgba(212, 175, 55, 0.7)', borderColor:'rgba(212, 175, 55, 1)', borderWidth:1 }] },
         options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
       });
       const ctx2 = document.getElementById('status-chart').getContext('2d');
       if (statusChart) statusChart.destroy();
-      const baseColors = ['#22c55e','#ef4444','#ef4444','#f59e0b','#9ca3af'];
+      const baseColors = ['#22c55e','#ef4444','#ef4444','#d4af37','#9ca3af'];
       statusChart = new Chart(ctx2, {
         type:'doughnut',
         data:{ labels:Object.keys(statusCounts), datasets:[{ data:Object.values(statusCounts), backgroundColor:baseColors, borderColor:baseColors, borderWidth:1 }] },
         options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } }
       });
     }
-
     // =================================== INTI APLIKASI ===================================
     $(document).ready(function(){
       // Inisialisasi Datepicker
       $(".tanggal-input").datepicker({ dateFormat: "dd/mm/yy", changeMonth: true, changeYear: true, yearRange: "2020:2035" });
-
       // Event listener untuk navigasi tab
       $('.tab-btn').on('click', async function() {
         const tabId = $(this).data('tab');
-        $('.tab-btn').removeClass('border-b-2 border-yellow-500 text-yellow-600').addClass('text-gray-500 hover:text-gray-700');
-        $(this).removeClass('text-gray-500 hover:text-gray-700').addClass('border-b-2 border-yellow-500 text-yellow-600');
+        $('.tab-btn').removeClass('active').addClass('text-gray-500 hover:text-gray-700');
+        $(this).addClass('active').removeClass('text-gray-500 hover:text-gray-700');
         $('.tab-content').addClass('section-hidden');
         $(`#${tabId}-section`).removeClass('section-hidden');
-
         // Panggil fungsi render yang sesuai dengan tab yang diaktifkan
         if (tabId === 'data') renderTable();
         if (tabId === 'dashboard') loadDashboard();
         if (tabId === 'vendor') { syncVendorFromAll(); renderVendorTable(); }
         if (tabId === 'compare') {
           if (!priceReady) await loadPriceDB();
-          applyVendorHeaderLabels();
+          updateVendorLabelsUI();
           renderCompareTable();
         }
       });
-
       // Event listener form input data
       $('#input-form').on('submit', e => { e.preventDefault(); submitForm(); });
       $('#edit-form').on('submit', e => { e.preventDefault(); updateData(); });
-      $('#close-modal-btn').on('click', () => $('#edit-modal').addClass('hidden'));
-
+      $('#close-modal-btn').on('click', () => $('#edit-modal').removeClass('show'));
       // Event listener tab Data
       $('#refresh-btn').on('click', loadData);
       $('#export-excel-btn').on('click', exportToExcel);
@@ -1587,14 +2030,12 @@
       $('#filter-tanggal-awal, #filter-tanggal-akhir').on('change', filterData);
       $('#sort-tanggal').on('change', function(){ sortColumn='tanggal'; sortDirection=$(this).val(); updateSortIndicators(); sortData(); renderTable(); });
       $('#data-table thead').on('click', 'th.sortable', thSortHandler);
-
       // Cek angsuran saat NPK diinput
       $('#npk').on('input blur', function(){ checkAngsuranOnInput($(this).val().trim()); });
       $('#angsuran-ack-input').on('change', function(){
         const needAck = !$('#angsuran-warning-input').hasClass('hidden');
         toggleSubmitDisabled(!( $(this).is(':checked') || !needAck ));
       });
-
       // Event listener tab Vendor
       $('#vendor-refresh-btn').on('click', function(){ loadPriceDB(); });
       $('#vendor-export-excel-btn').on('click', exportVendorToExcel);
@@ -1616,7 +2057,6 @@
         vendorFiltered = [...vendorData];
         renderVendorTable();
       });
-
       // Event listener tab Pembanding Vendor
       $('#compare-tanggal-awal, #compare-tanggal-akhir').on('change', renderCompareTable);
       $('#compare-clear-filter').on('click', function(){
@@ -1626,24 +2066,22 @@
       $('#compare-export-excel-btn').on('click', exportCompareToExcel);
       $('#compare-export-pdf-btn').on('click', exportCompareToPDF);
       $('#compare-export-jpeg-btn').on('click', exportCompareToJPEG);
-
       // 1) Muat opsi tipe dinamis dari price DB
       loadPriceDB();
-
       // 2) Muat data HP
       loadData();
-
       // 3) (Opsional) aktifkan Select2 biar searchable
       if ($.fn.select2){
         $('#tipehp, #edit-tipehp').select2({ placeholder:'Pilih Tipe HP', allowClear:true, width:'100%' });
       }
-
-      // 4) Bind toggle “LAINNYA”
+      // 4) Bind toggle "LAINNYA"
       bindCustomTipe('#tipehp', '#tipehp-custom-wrap', '#tipehp-custom');
       bindCustomTipe('#edit-tipehp', '#edit-tipehp-custom-wrap', '#edit-tipehp-custom');
-
-      // 5) Saat klik Refresh Vendor → muat ulang price DB agar opsi tipe update
-      $('#vendor-refresh-btn').on('click', function(){ loadPriceDB(); });
+      
+      // Close notification
+      $('#close-notification').on('click', function() {
+        $('#notification').removeClass('show');
+      });
     });
   </script>
 </body>
