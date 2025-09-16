@@ -6,162 +6,247 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: { poppins: ['Poppins','ui-sans-serif','system-ui'] },
           colors: { ink:'#0f172a', mute:'#64748b', line:'#e2e8f0', brand:'#dcbc4a', brandDark:'#b89d3a', danger:'#ef4444', ok:'#16a34a' },
-          boxShadow: { card:'0 8px 28px rgba(15,23,42,.10)' }
+          boxShadow: { card:'0 8px 28px rgba(15,23,42,.10)', soft:'0 4px 12px rgba(15,23,42,.05)' },
+          animation: { 'fade-in':'fadeIn 0.3s ease-in-out', 'slide-up':'slideUp 0.3s ease-out', 'spin':'spin 0.8s linear infinite' },
+          keyframes: {
+            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+            slideUp: { '0%': { transform: 'translateY(10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+            spin: { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } }
+          }
         }
       }
     }
   </script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     .pill{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem .75rem;border:1px solid #f1e5a6;background:#fff7d1;border-radius:999px;font-weight:600;color:#7a6400}
     .thead-sticky th{position:sticky;top:0;z-index:10}
-    .fade{transition:.2s ease}
+    .fade{transition:.3s ease}
     input.table-edit{width:100%;background:#fff;border:1px solid var(--line,#e2e8f0);border-radius:.5rem;padding:.35rem .5rem}
     .glass{backdrop-filter:saturate(130%) blur(6px);background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.55))}
     .brand-gradient{background:linear-gradient(135deg,#f6e08a,#dcbc4a,#b89d3a)}
     .kbd{border:1px solid #e2e8f0;border-bottom-width:2px;border-radius:.5rem;padding:.05rem .4rem;font-size:.75rem}
-    .toast{position:fixed;right:1rem;bottom:1rem;z-index:50;}
+    .toast{position:fixed;right:1rem;bottom:1rem;z-index:50; animation: slide-up 0.3s ease-out}
+    .hover-lift:hover { transform: translateY(-2px); }
+    .btn-primary { @apply bg-brand text-ink hover:bg-brandDark border border-amber-300; }
+    .btn-success { @apply bg-ok text-white hover:bg-green-600; }
+    .btn-danger { @apply bg-danger text-white hover:bg-red-600; }
+    .btn-default { @apply bg-white text-ink hover:bg-slate-50 border border-line; }
+    .input-field { @apply w-full px-4 py-3 rounded-xl border border-line bg-white focus:ring-2 focus:ring-brand/30 focus:border-brand transition-all; }
+    .card { @apply bg-white border border-line rounded-2xl shadow-card overflow-hidden; }
+    .table-row-hover:hover { @apply bg-slate-50; }
+    .table-row-even:nth-child(even) { @apply bg-slate-50/40; }
+    .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; }
+    .loading-spinner-sm { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(0,0,0,0.2); border-radius: 50%; border-top-color: currentColor; animation: spin 0.8s linear infinite; }
+    .overlay-loading { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    .overlay-loading-spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; }
+    .disabled { pointer-events: none; opacity: 0.6; }
   </style>
 </head>
-<body class="bg-slate-50 text-ink font-poppins">
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen text-ink font-poppins">
+  <!-- Global Loading Overlay -->
+  <div id="globalLoading" class="overlay-loading hidden">
+    <div class="overlay-loading-spinner"></div>
+  </div>
+  
   <div id="toast" class="toast hidden"></div>
   <main class="max-w-7xl mx-auto p-4 md:p-6">
     <!-- Hero / Top -->
-    <section class="rounded-2xl shadow-card overflow-hidden mb-6">
+    <section class="rounded-2xl shadow-card overflow-hidden mb-6 animate-fade-in">
       <div class="brand-gradient text-ink/90">
         <div class="px-5 md:px-6 py-5 flex flex-wrap items-center gap-3 justify-between">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-white/90 grid place-items-center shadow">💳</div>
+            <div class="w-10 h-10 rounded-xl bg-white/90 grid place-items-center shadow-md">
+              <i class="fas fa-store text-brand text-lg"></i>
+            </div>
             <div>
-              <h1 class="text-xl md:text-2xl font-semibold">Harga Vendor</h1>
+              <h1 class="text-xl md:text-2xl font-bold">Harga Vendor</h1>
               <p class="text-xs md:text-sm opacity-80">Kelola nama vendor, tambah, edit, hapus data HP</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <a id="csvLink" class="px-3 py-2 rounded-xl border border-line bg-white/90 hover:bg-white fade" target="_blank" rel="noopener noreferrer" download="harga_vendor.csv">⬇️ CSV</a>
-            <button id="btnRefresh" class="px-3 py-2 rounded-xl bg-ink text-white hover:opacity-90 fade">↻ Refresh</button>
-            <a href="index.html" class="px-3 py-2 rounded-xl border border-line bg-white/90 hover:bg-white fade" title="Kembali">⟵ Kembali</a>
+            <a id="csvLink" class="px-4 py-2.5 rounded-xl border border-line bg-white/90 hover:bg-white hover-lift fade flex items-center gap-2" target="_blank" rel="noopener noreferrer" download="harga_vendor.csv">
+              <i class="fas fa-download"></i> <span class="hidden sm:inline">CSV</span>
+            </a>
+            <button id="btnRefresh" class="px-4 py-2.5 rounded-xl bg-ink text-white hover:opacity-90 fade flex items-center gap-2 hover-lift">
+              <i class="fas fa-sync-alt"></i> <span class="hidden sm:inline">Refresh</span>
+            </button>
+            <a href="index.html" class="px-4 py-2.5 rounded-xl border border-line bg-white/90 hover:bg-white fade flex items-center gap-2 hover-lift" title="Kembali">
+              <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline">Kembali</span>
+            </a>
           </div>
         </div>
       </div>
       <div class="glass px-5 md:px-6 py-3 flex flex-wrap items-center gap-3">
-        <span class="pill">VEN1: <b id="name-alf">—</b></span>
-        <span class="pill">VEN2: <b id="name-sa">—</b></span>
-        <span class="text-mute">Diperbarui: <b id="updatedAt">—</b></span>
-        <span class="text-mute">Jumlah: <b id="count">0</b></span>
-        <span class="text-mute hidden md:inline">Tip: tekan <span class="kbd">/</span> untuk fokus pencarian</span>
+        <span class="pill"><i class="fas fa-tag"></i> VEN1: <b id="name-alf">—</b></span>
+        <span class="pill"><i class="fas fa-tag"></i> VEN2: <b id="name-sa">—</b></span>
+        <span class="text-mute flex items-center gap-1"><i class="far fa-clock"></i> Diperbarui: <b id="updatedAt">—</b></span>
+        <span class="text-mute flex items-center gap-1"><i class="fas fa-list-ol"></i> Jumlah: <b id="count">0</b></span>
+        <span class="text-mute hidden md:inline flex items-center gap-1"><i class="fas fa-lightbulb"></i> Tip: tekan <span class="kbd">/</span> untuk fokus pencarian</span>
       </div>
     </section>
-
+    
     <!-- Ubah nama vendor -->
-    <section class="bg-white border border-line rounded-2xl shadow-card p-4 mb-6">
+    <section class="card p-5 mb-6 animate-fade-in">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+          <i class="fas fa-edit text-brand"></i>
+        </div>
+        <h2 class="font-semibold text-lg">Ubah Nama Vendor</h2>
+      </div>
       <div class="flex flex-wrap items-end gap-3">
-        <div>
-          <label class="block text-sm text-mute mb-1">Nama Vendor 1 (C1)</label>
-          <input id="nameAlf" class="w-64 px-3 py-2 rounded-xl border border-line bg-white" placeholder="mis. Alfacell">
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm text-mute mb-1 font-medium">Nama Vendor 1 (C1)</label>
+          <input id="nameAlf" class="input-field" placeholder="mis. Alfacell">
         </div>
-        <div>
-          <label class="block text-sm text-mute mb-1">Nama Vendor 2 (D1)</label>
-          <input id="nameSa" class="w-64 px-3 py-2 rounded-xl border border-line bg-white" placeholder="mis. Sentral Abadi Jaya">
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm text-mute mb-1 font-medium">Nama Vendor 2 (D1)</label>
+          <input id="nameSa" class="input-field" placeholder="mis. Sentral Abadi Jaya">
         </div>
-        <button id="btnSetNames" class="px-4 py-2 rounded-xl bg-brand text-ink hover:opacity-90 border border-amber-300 fade">💾 Simpan Nama Vendor</button>
-        <span class="text-mute text-sm">Kosongkan salah satu jika tidak ingin mengubahnya.</span>
+        <button id="btnSetNames" class="px-5 py-3 rounded-xl btn-primary hover-lift fade flex items-center gap-2">
+          <i class="fas fa-save"></i> <span>Simpan Nama Vendor</span>
+        </button>
       </div>
+      <p class="text-xs text-mute mt-3 flex items-center gap-1"><i class="fas fa-info-circle"></i> Kosongkan salah satu jika tidak ingin mengubahnya.</p>
     </section>
-
+    
     <!-- Tambah data -->
-    <section class="bg-white border border-line rounded-2xl shadow-card p-4 mb-6">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="font-semibold">Tambah Data HP</h2>
-        <button id="btnClearAdd" class="text-sm px-3 py-1.5 rounded-lg border border-line bg-white hover:bg-slate-50 fade">Bersihkan</button>
+    <section class="card p-5 mb-6 animate-fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-ok/10 flex items-center justify-center">
+            <i class="fas fa-plus text-ok"></i>
+          </div>
+          <h2 class="font-semibold text-lg">Tambah Data HP</h2>
+        </div>
+        <button id="btnClearAdd" class="text-sm px-3 py-2 rounded-lg btn-default fade flex items-center gap-1 hover-lift">
+          <i class="fas fa-eraser"></i> Bersihkan
+        </button>
       </div>
-      <div class="grid md:grid-cols-5 gap-3">
+      <div class="grid md:grid-cols-5 gap-4">
         <div class="md:col-span-2">
-          <label class="block text-sm text-mute mb-1">TIPE BARANG <span class="text-danger">*</span></label>
-          <input id="addTipe" class="w-full px-3 py-2 rounded-xl border border-line bg-white" placeholder="Contoh: Redmi Note 13 8/256">
+          <label class="block text-sm text-mute mb-1 font-medium">TIPE BARANG <span class="text-danger">*</span></label>
+          <input id="addTipe" class="input-field" placeholder="Contoh: Redmi Note 13 8/256">
         </div>
         <div>
-          <label class="block text-sm text-mute mb-1">MEREK</label>
-          <input id="addMerek" class="w-full px-3 py-2 rounded-xl border border-line bg-white" placeholder="Xiaomi / Samsung / dst">
+          <label class="block text-sm text-mute mb-1 font-medium">MEREK</label>
+          <input id="addMerek" class="input-field" placeholder="Xiaomi / Samsung / dst">
         </div>
         <div>
-          <label class="block text-sm text-mute mb-1">Harga <span id="lblAlf">Vendor 1</span></label>
-          <input id="addAlf" class="w-full px-3 py-2 rounded-xl border border-line bg-white text-right tabular-nums" inputmode="numeric" placeholder="0">
+          <label class="block text-sm text-mute mb-1 font-medium">Harga <span id="lblAlf">Vendor 1</span></label>
+          <input id="addAlf" class="input-field text-right tabular-nums" inputmode="numeric" placeholder="0">
         </div>
         <div>
-          <label class="block text-sm text-mute mb-1">Harga <span id="lblSa">Vendor 2</span></label>
-          <input id="addSa" class="w-full px-3 py-2 rounded-xl border border-line bg-white text-right tabular-nums" inputmode="numeric" placeholder="0">
+          <label class="block text-sm text-mute mb-1 font-medium">Harga <span id="lblSa">Vendor 2</span></label>
+          <input id="addSa" class="input-field text-right tabular-nums" inputmode="numeric" placeholder="0">
         </div>
       </div>
-      <div class="mt-3">
-        <button id="btnAdd" class="px-4 py-2 rounded-xl bg-ok text-white hover:opacity-90 fade">➕ Tambah</button>
-        <span class="text-xs text-mute ml-2">Enter pada salah satu kolom juga menambah.</span>
+      <div class="mt-4">
+        <button id="btnAdd" class="px-5 py-3 rounded-xl btn-success hover-lift fade flex items-center gap-2">
+          <i class="fas fa-plus-circle"></i> <span>Tambah Data</span>
+        </button>
+        <span class="text-xs text-mute ml-2 flex items-center gap-1"><i class="fas fa-keyboard"></i> Enter pada salah satu kolom juga menambah.</span>
       </div>
     </section>
-
+    
     <!-- Tabel data -->
-    <section class="bg-white border border-line rounded-2xl shadow-card p-0 overflow-hidden">
-      <div class="flex items-center justify-between gap-3 p-3 border-b border-line bg-slate-50/60">
-        <h2 class="font-semibold">Data</h2>
-        <input id="clientFilter" class="w-80 px-3 py-2 rounded-xl border border-line bg-white" placeholder="/ untuk cepat cari (tipe / merek)…">
+    <section class="card overflow-hidden animate-fade-in">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-line bg-slate-50/60">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-ink/10 flex items-center justify-center">
+            <i class="fas fa-table text-ink"></i>
+          </div>
+          <h2 class="font-semibold text-lg">Data Harga Vendor</h2>
+        </div>
+        <div class="relative w-full sm:w-auto">
+          <input id="clientFilter" class="input-field pl-10 w-full sm:w-80" placeholder="/ untuk cepat cari (tipe / merek)…">
+          <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-mute"></i>
+        </div>
       </div>
       <div class="overflow-auto">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-100 thead-sticky">
             <tr>
-              <th class="text-left px-4 py-3 border-b border-line">TIPE BARANG</th>
-              <th class="text-left px-4 py-3 border-b border-line">MEREK</th>
-              <th id="thAlf" class="text-right px-4 py-3 border-b border-line">HARGA V1</th>
-              <th id="thSa" class="text-right px-4 py-3 border-b border-line">HARGA V2</th>
-              <th class="text-right px-4 py-3 border-b border-line">ROW</th>
-              <th class="text-right px-4 py-3 border-b border-line">AKSI</th>
+              <th class="text-left px-4 py-3 border-b border-line font-semibold">TIPE BARANG</th>
+              <th class="text-left px-4 py-3 border-b border-line font-semibold">MEREK</th>
+              <th id="thAlf" class="text-right px-4 py-3 border-b border-line font-semibold">HARGA V1</th>
+              <th id="thSa" class="text-right px-4 py-3 border-b border-line font-semibold">HARGA V2</th>
+              <th class="text-right px-4 py-3 border-b border-line font-semibold">ROW</th>
+              <th class="text-right px-4 py-3 border-b border-line font-semibold">AKSI</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
-      <div id="status" class="text-mute text-sm p-3"></div>
+      <div id="status" class="text-mute text-sm p-4 flex items-center gap-2">
+        <div id="loadingSpinner" class="loading-spinner hidden"></div>
+        <span id="statusText"></span>
+      </div>
     </section>
   </main>
-
   <script>
     // ============== Endpoint ==================
     const API = 'https://script.google.com/macros/s/AKfycbzzjXx_YVmJCy6Fw_LCf3BR6uK9NbTrkvJocoiR9kNvQ8n84XHipnLYdKvfoQR_Df4V_A/exec';
-
     // ============== State =====================
     let VENDOR = { name_alf: 'Alfacell', name_sa: 'Sentral Abadi Jaya' };
     let ALL_ROWS = [];
-
+    let IS_LOADING = false;
     // ============== Utils =====================
     const el  = id => document.getElementById(id);
     const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
     const fmtIDR = n => (n == null || n === '' || isNaN(n)) ? '' : new Intl.NumberFormat('id-ID').format(Number(n));
     const parseMoney = s => String(s ?? '').replace(/[^\d.-]/g,'').trim(); // biarkan backend yang normalisasi
-
+    
     function setBusy(btn, busy){
       if(!btn) return;
       btn.disabled = !!busy;
       btn.classList.toggle('opacity-60', !!busy);
-      const t = btn.dataset.txt || btn.textContent;
-      if(!btn.dataset.txt) btn.dataset.txt = t;
-      btn.textContent = busy ? 'Proses…' : btn.dataset.txt;
+      const originalContent = btn.innerHTML;
+      if(!btn.dataset.originalContent) btn.dataset.originalContent = originalContent;
+      btn.innerHTML = busy ? 
+        `<span class="loading-spinner-sm"></span> Proses…` : 
+        btn.dataset.originalContent;
     }
-
+    
+    function showGlobalLoading(show) {
+      const loading = el('globalLoading');
+      if (show) {
+        loading.classList.remove('hidden');
+        IS_LOADING = true;
+      } else {
+        loading.classList.add('hidden');
+        IS_LOADING = false;
+      }
+    }
+    
+    function showLoading(show) {
+      const spinner = el('loadingSpinner');
+      const statusText = el('statusText');
+      if (show) {
+        spinner.classList.remove('hidden');
+        statusText.textContent = 'Memuat data...';
+      } else {
+        spinner.classList.add('hidden');
+      }
+    }
+    
     function toast(msg, type='info'){
       const t = el('toast');
       t.className = 'toast';
+      const icon = type==='error' ? 'fa-exclamation-circle' : (type==='ok' ? 'fa-check-circle' : 'fa-info-circle');
       const bg = type==='error' ? 'bg-danger text-white' : (type==='ok' ? 'bg-emerald-600 text-white' : 'bg-ink text-white');
-      t.innerHTML = `<div class="${bg} rounded-xl shadow-card px-4 py-3">${esc(msg)}</div>`;
+      t.innerHTML = `<div class="${bg} rounded-xl shadow-card px-4 py-3 flex items-center gap-2"><i class="fas ${icon}"></i> ${esc(msg)}</div>`;
       t.classList.remove('hidden');
-      setTimeout(()=>{t.classList.add('hidden')}, 2200);
+      setTimeout(()=>{t.classList.add('hidden')}, 3000);
     }
-
+    
     async function getJSON(params = {}){
       const url = new URL(API);
       Object.keys(params).forEach(k => url.searchParams.set(k, params[k]));
@@ -171,6 +256,7 @@
       if (!data.ok) throw new Error(data.error || 'Gagal');
       return data;
     }
+    
     async function postForm(payload){
       const res = await fetch(API, { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8' }, body: new URLSearchParams(payload) });
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -178,7 +264,7 @@
       if (!data.ok) throw new Error(data.error || 'Gagal');
       return data;
     }
-
+    
     // ============== Render ====================
     function renderVendors(){
       el('name-alf').textContent = VENDOR.name_alf;
@@ -191,60 +277,73 @@
       el('nameAlf').value = VENDOR.name_alf;
       el('nameSa').value  = VENDOR.name_sa;
     }
-
+    
     function rowHtml(r){
       return `
-        <td class="px-4 py-3 border-b border-line" data-col="tipe">${esc(r.tipe)}</td>
+        <td class="px-4 py-3 border-b border-line font-medium" data-col="tipe">${esc(r.tipe)}</td>
         <td class="px-4 py-3 border-b border-line">${esc(r.merek)}</td>
-        <td class="px-4 py-3 border-b border-line text-right tabular-nums" data-col="alf">${fmtIDR(r.harga_alfafcell)}</td>
-        <td class="px-4 py-3 border-b border-line text-right tabular-nums" data-col="sa">${fmtIDR(r.harga_sentral_abadi)}</td>
-        <td class="px-4 py-3 border-b border-line text-right">${r.row}</td>
+        <td class="px-4 py-3 border-b border-line text-right tabular-nums font-medium" data-col="alf">${fmtIDR(r.harga_alfafcell)}</td>
+        <td class="px-4 py-3 border-b border-line text-right tabular-nums font-medium" data-col="sa">${fmtIDR(r.harga_sentral_abadi)}</td>
+        <td class="px-4 py-3 border-b border-line text-right font-medium">${r.row}</td>
         <td class="px-4 py-3 border-b border-line text-right space-x-2">
-          <button class="px-3 py-1.5 rounded-lg border border-line bg-white hover:bg-slate-50 fade" data-edit="${r.row}">✏️ Edit</button>
-          <button class="px-3 py-1.5 rounded-lg bg-danger text-white hover:opacity-90 fade" data-delete="${r.row}">🗑️ Hapus</button>
+          <button class="px-3 py-1.5 rounded-lg btn-default fade flex items-center gap-1 hover-lift" data-edit="${r.row}">
+            <i class="fas fa-edit"></i> <span class="hidden sm:inline">Edit</span>
+          </button>
+          <button class="px-3 py-1.5 rounded-lg btn-danger fade flex items-center gap-1 hover-lift" data-delete="${r.row}">
+            <i class="fas fa-trash"></i> <span class="hidden sm:inline">Hapus</span>
+          </button>
         </td>
       `;
     }
-
+    
     function editRowHtml(r){
       return `
         <td class="px-4 py-3 border-b border-line" data-col="tipe">
-          <input class="table-edit" data-input="tipe" value="${esc(r.tipe)}" placeholder="TIPE BARANG">
+          <input class="table-edit focus:ring-2 focus:ring-brand/30 focus:border-brand" data-input="tipe" value="${esc(r.tipe)}" placeholder="TIPE BARANG">
         </td>
         <td class="px-4 py-3 border-b border-line">${esc(r.merek)}</td>
         <td class="px-4 py-3 border-b border-line text-right" data-col="alf">
-          <input class="table-edit text-right tabular-nums" data-input="alf" value="${esc(r.harga_alfafcell ?? '')}" placeholder="Harga ${esc(VENDOR.name_alf)}">
+          <input class="table-edit text-right tabular-nums focus:ring-2 focus:ring-brand/30 focus:border-brand" data-input="alf" value="${esc(r.harga_alfafcell ?? '')}" placeholder="Harga ${esc(VENDOR.name_alf)}">
         </td>
         <td class="px-4 py-3 border-b border-line text-right" data-col="sa">
-          <input class="table-edit text-right tabular-nums" data-input="sa" value="${esc(r.harga_sentral_abadi ?? '')}" placeholder="Harga ${esc(VENDOR.name_sa)}">
+          <input class="table-edit text-right tabular-nums focus:ring-2 focus:ring-brand/30 focus:border-brand" data-input="sa" value="${esc(r.harga_sentral_abadi ?? '')}" placeholder="Harga ${esc(VENDOR.name_sa)}">
         </td>
-        <td class="px-4 py-3 border-b border-line text-right">${r.row}</td>
+        <td class="px-4 py-3 border-b border-line text-right font-medium">${r.row}</td>
         <td class="px-4 py-3 border-b border-line text-right space-x-2">
-          <button class="px-3 py-1.5 rounded-lg bg-ink text-white hover:opacity-90 fade" data-save="${r.row}">💾 Simpan</button>
-          <button class="px-3 py-1.5 rounded-lg border border-line bg-white hover:bg-slate-50 fade" data-cancel="${r.row}">↩️ Batal</button>
+          <button class="px-3 py-1.5 rounded-xl bg-ink text-white hover:opacity-90 fade flex items-center gap-1 hover-lift" data-save="${r.row}">
+            <i class="fas fa-save"></i> <span class="hidden sm:inline">Simpan</span>
+          </button>
+          <button class="px-3 py-1.5 rounded-lg btn-default fade flex items-center gap-1 hover-lift" data-cancel="${r.row}">
+            <i class="fas fa-times"></i> <span class="hidden sm:inline">Batal</span>
+          </button>
         </td>
       `;
     }
-
+    
     function renderTable(rows){
       const tb = el('tbody'); tb.innerHTML = '';
       if (!rows || rows.length === 0){
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="6" class="px-4 py-6 text-center text-mute">Tidak ada data.</td>`;
+        tr.innerHTML = `<td colspan="6" class="px-4 py-8 text-center text-mute">
+          <div class="flex flex-col items-center justify-center gap-2">
+            <i class="fas fa-inbox text-3xl text-slate-300"></i>
+            <p>Tidak ada data.</p>
+          </div>
+        </td>`;
         tb.appendChild(tr);
         el('count').textContent = 0;
         return;
       }
       rows.forEach(r=>{
         const tr = document.createElement('tr');
-        tr.className = 'even:bg-slate-50/40';
+        tr.className = 'table-row-even table-row-hover';
         tr.dataset.row = r.row;
         tr.innerHTML = rowHtml(r);
         tb.appendChild(tr);
       });
       el('count').textContent = rows.length;
     }
-
+    
     // ============== Loaders ===================
     async function loadConfig(){
       const { updatedAt, vendors } = await getJSON({ action:'config' });
@@ -252,19 +351,28 @@
       renderVendors();
       el('updatedAt').textContent = new Date(updatedAt || Date.now()).toLocaleString('id-ID');
     }
+    
     async function loadAll(){
-      const data = await getJSON({});
-      if (data.vendorLabels) VENDOR = data.vendorLabels;
-      renderVendors();
-      el('updatedAt').textContent = new Date(data.updatedAt || Date.now()).toLocaleString('id-ID');
-      ALL_ROWS = data.data || [];
-      renderTable(ALL_ROWS);
-      el('status').textContent = '';
+      showLoading(true);
+      try {
+        const data = await getJSON({});
+        if (data.vendorLabels) VENDOR = data.vendorLabels;
+        renderVendors();
+        el('updatedAt').textContent = new Date(data.updatedAt || Date.now()).toLocaleString('id-ID');
+        ALL_ROWS = data.data || [];
+        renderTable(ALL_ROWS);
+        el('statusText').textContent = '';
+      } catch(err) {
+        el('statusText').textContent = 'Gagal memuat: ' + err.message;
+        toast('Gagal memuat data: ' + err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
     }
-
+    
     // ============== Actions ===================
     async function doSetNames(btn){
-      setBusy(btn,true);
+      setBusy(btn, true);
       try{
         const a = el('nameAlf').value.trim();
         const s = el('nameSa').value.trim();
@@ -275,11 +383,11 @@
         await loadAll();
         toast('Nama vendor berhasil tersimpan','ok');
       }catch(err){ toast('Gagal simpan vendor: '+err.message,'error'); }
-      finally{ setBusy(btn,false); }
+      finally{ setBusy(btn, false); }
     }
-
+    
     async function doAdd(btn){
-      setBusy(btn,true);
+      setBusy(btn, true);
       try{
         const tipe  = el('addTipe').value.trim();
         const merek = el('addMerek').value.trim();
@@ -291,31 +399,36 @@
         await loadAll();
         toast('Baris baru ditambahkan','ok');
       }catch(err){ toast('Gagal menambah: '+err.message,'error'); }
-      finally{ setBusy(btn,false); }
+      finally{ setBusy(btn, false); }
     }
-
+    
     async function doDelete(row){
-      if(!confirm('Hapus baris ROW '+row+'? Tindakan ini tidak dapat dibatalkan.')) return;
+      if(!confirm(`Hapus baris ROW ${row}? Tindakan ini tidak dapat dibatalkan.`)) return;
+      
+      // Disable all buttons to prevent multiple actions
+      document.querySelectorAll('button').forEach(btn => btn.classList.add('disabled'));
+      
       try{
         await postForm({ action:'deleterow', row });
         await loadAll();
-        toast('Baris '+row+' dihapus','ok');
+        toast(`Baris ${row} dihapus`,'ok');
       }catch(err){ toast('Gagal menghapus: '+err.message,'error'); }
+      finally{
+        // Re-enable all buttons
+        document.querySelectorAll('button').forEach(btn => btn.classList.remove('disabled'));
+      }
     }
-
+    
     // Delegasi klik untuk Edit/Simpan/Batal/Hapus
     el('tbody').addEventListener('click', async (e)=>{
       const btn = e.target.closest('button');
       if(!btn) return;
-
       const row = Number(btn.dataset.edit || btn.dataset.save || btn.dataset.cancel || btn.dataset.delete || 0);
       if(!row) return;
-
       const data = ALL_ROWS.find(x => Number(x.row) === row);
       if(!data) return;
-
       const tr = e.target.closest('tr');
-
+      
       if (btn.dataset.edit){
         tr.innerHTML = editRowHtml(data);
         tr.querySelectorAll('input').forEach(inp=>{
@@ -327,26 +440,41 @@
         tr.querySelector('[data-input="tipe"]').focus();
         return;
       }
-
-      if (btn.dataset.cancel){ tr.innerHTML = rowHtml(data); return; }
-
+      
+      if (btn.dataset.cancel){ 
+        tr.innerHTML = rowHtml(data); 
+        return; 
+      }
+      
       if (btn.dataset.save){
         const tipeVal = tr.querySelector('[data-input="tipe"]').value.trim();
         const alfVal  = parseMoney(tr.querySelector('[data-input="alf"]').value);
         const saVal   = parseMoney(tr.querySelector('[data-input="sa"]').value);
         if(!tipeVal){ toast('TIPE BARANG wajib diisi','error'); return; }
+        
+        // Show loading on the save button
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<span class="loading-spinner-sm"></span> Menyimpan...';
         btn.disabled = true;
+        
         try{
           await postForm({ action:'updaterow', row, tipe: tipeVal, harga_alfafcell: alfVal, harga_sentral_abadi: saVal });
           await loadAll();
-          toast('Baris '+row+' disimpan','ok');
-        }catch(err){ toast('Gagal simpan: '+err.message,'error'); btn.disabled = false; }
+          toast(`Baris ${row} disimpan`,'ok');
+        }catch(err){ 
+          toast('Gagal simpan: '+err.message,'error'); 
+          btn.innerHTML = originalContent;
+          btn.disabled = false;
+        }
         return;
       }
-
-      if (btn.dataset.delete){ await doDelete(row); return; }
+      
+      if (btn.dataset.delete){ 
+        await doDelete(row); 
+        return; 
+      }
     });
-
+    
     // Filter cepat
     el('clientFilter').addEventListener('input', e=>{
       const q = e.target.value.trim().toLowerCase();
@@ -354,9 +482,11 @@
       const f = ALL_ROWS.filter(r => (r.tipe||'').toLowerCase().includes(q) || (r.merek||'').toLowerCase().includes(q));
       renderTable(f);
     });
-
+    
     // Shortcuts: '/' fokus cari, Enter pada kolom tambah = tambah
     window.addEventListener('keydown', (e)=>{
+      if (IS_LOADING) return; // Prevent shortcuts during loading
+      
       const tag = (e.target.tagName||'').toLowerCase();
       if(e.key === '/' && tag !== 'input' && tag !== 'textarea'){
         e.preventDefault(); el('clientFilter').focus();
@@ -365,18 +495,45 @@
         e.preventDefault(); el('btnAdd').click();
       }
     });
-
+    
+    // Refresh button with global loading
+    document.getElementById('btnRefresh').addEventListener('click', async function() {
+      if (IS_LOADING) return;
+      
+      showGlobalLoading(true);
+      try {
+        await loadAll();
+        toast('Data berhasil diperbarui', 'ok');
+      } catch(err) {
+        toast('Gagal memperbarui data: ' + err.message, 'error');
+      } finally {
+        showGlobalLoading(false);
+      }
+    });
+    
     // Init
     (async function init(){
-      document.getElementById('btnRefresh').addEventListener('click', loadAll);
       document.getElementById('btnSetNames').addEventListener('click', e=>doSetNames(e.target));
       document.getElementById('btnAdd').addEventListener('click', e=>doAdd(e.target));
-      document.getElementById('btnClearAdd').addEventListener('click', ()=>{ el('addTipe').value=''; el('addMerek').value=''; el('addAlf').value=''; el('addSa').value=''; el('addTipe').focus(); });
+      document.getElementById('btnClearAdd').addEventListener('click', ()=>{
+        el('addTipe').value=''; 
+        el('addMerek').value=''; 
+        el('addAlf').value=''; 
+        el('addSa').value=''; 
+        el('addTipe').focus();
+      });
+      
       try{
-        el('status').textContent = 'Memuat data…';
+        showGlobalLoading(true);
+        el('statusText').textContent = 'Memuat data...';
         await loadConfig();
         await loadAll();
-      }catch(err){ el('status').textContent = 'Gagal memuat: ' + err.message; }
+      }catch(err){ 
+        el('statusText').textContent = 'Gagal memuat: ' + err.message;
+        toast('Gagal memuat data: ' + err.message, 'error');
+      } finally {
+        showGlobalLoading(false);
+      }
     })();
   </script>
 </body>
