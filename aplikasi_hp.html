@@ -305,14 +305,14 @@
       border-left-color: #3b82f6;
     }
     
-    /* Modal improvements */
+    /* Perbaikan Modal Edit */
     .modal {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
+      background-color: rgba(0, 0, 0, 0.7);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -329,15 +329,15 @@
     
     .modal-content {
       background-color: var(--bg-card);
-      border-radius: 0.5rem;
-      box-shadow: 0 20px 25px -5px var(--shadow-color), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      border-radius: 0.75rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
       width: 100%;
-      max-width: 2rem;
+      max-width: 800px;
       max-height: 90vh;
       overflow-y: auto;
-      transform: scale(0.9);
+      transform: scale(0.95);
       transition: transform 0.3s ease;
-      border: 1px solid var(--border-color);
+      border: 2px solid var(--gold);
     }
     
     .modal.show .modal-content {
@@ -346,28 +346,174 @@
     
     .modal-header {
       padding: 1.5rem;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 2px solid var(--border-color);
       display: flex;
       align-items: center;
       justify-content: space-between;
+      background-color: var(--bg-light);
+      border-top-left-radius: 0.75rem;
+      border-top-right-radius: 0.75rem;
     }
     
     .modal-title {
-      font-size: 1.25rem;
-      font-weight: 600;
+      font-size: 1.5rem;
+      font-weight: 700;
       color: var(--gold-dark);
     }
     
     .modal-body {
-      padding: 1.5rem;
+      padding: 2rem;
     }
     
     .modal-footer {
       padding: 1.5rem;
-      border-top: 1px solid var(--border-color);
+      border-top: 2px solid var(--border-color);
       display: flex;
       justify-content: flex-end;
-      gap: 0.75rem;
+      gap: 1rem;
+      background-color: var(--bg-light);
+      border-bottom-left-radius: 0.75rem;
+      border-bottom-right-radius: 0.75rem;
+    }
+    
+    /* Perbaikan Tombol Close Modal */
+    #close-modal-btn {
+      background: none;
+      border: none;
+      color: var(--gold-dark);
+      font-size: 1.5rem;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    
+    #close-modal-btn:hover {
+      background-color: var(--gold-light);
+      color: white;
+    }
+    
+    /* Perbaikan Form di Modal */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 0.95rem;
+    }
+    
+    .form-control {
+      display: block;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: var(--text-dark);
+      background-color: white;
+      border: 2px solid var(--border-color);
+      border-radius: 0.5rem;
+      transition: all 0.2s ease;
+    }
+    
+    .form-control:focus {
+      border-color: var(--gold);
+      outline: 0;
+      box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+    }
+    
+    /* Perbaikan Tombol di Modal */
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .btn-warning {
+      background-color: var(--gold);
+      color: white;
+      border: 1px solid var(--gold-dark);
+    }
+    
+    .btn-warning:hover {
+      background-color: var(--gold-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    }
+    
+    /* Perbaikan Tampilan di Mobile */
+    @media (max-width: 768px) {
+      .modal-content {
+        margin: 1rem;
+        width: calc(100% - 2rem);
+        max-height: calc(100vh - 2rem);
+      }
+      
+      .modal-body {
+        padding: 1.5rem;
+      }
+      
+      .form-control {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+      }
+      
+      .btn {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+      }
+    }
+    
+    /* Efek Hover pada Field Form */
+    .form-control:hover {
+      border-color: var(--gold);
+    }
+    
+    /* Animasi saat Modal Muncul */
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .modal.show .modal-content {
+      animation: modalFadeIn 0.3s ease-out;
+    }
+    
+    /* Perbaikan Tampilan Custom Tipe HP */
+    #tipehp-custom-wrap, #edit-tipehp-custom-wrap {
+      background-color: var(--bg-light);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      border: 2px dashed var(--border-color);
+    }
+    
+    /* Perbaikan Tampilan Field Tanggal */
+    .tanggal-input {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23d4af37' viewBox='0 0 16 16'%3E%3Cpath d='M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z'/%3E%3Cpath d='M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1.2rem;
+      padding-right: 2.5rem;
     }
     
     /* Loading overlay */
@@ -1512,6 +1658,11 @@
     function editData(id,row){
       const it = allData.find(d => (d.id && d.id==id) || (d.row && d.row==row));
       if (!it) return;
+      
+      // Reset form terlebih dahulu
+      $('#edit-form')[0].reset();
+      
+      // Isi data ke form
       $('#edit-id').val(it.id || '');
       $('#edit-row').val(it.row || '');
       $('#edit-tanggal').val(it.tanggal || '');
@@ -1523,7 +1674,11 @@
       $('#edit-status').val(it.status || '');
       $('#edit-stop-mulai').val(it.stopMulai || '');
       $('#edit-lanjut-mulai').val(it.lanjutMulai || '');
+      
+      // Tampilkan modal
       $('#edit-modal').addClass('show');
+      
+      // Atur tipe HP
       const t = it.tipehp || '';
       const $sel = $('#edit-tipehp');
       if ($sel.find(`option`).filter(function(){ return $(this).text() === t && $(this).val() === t; }).length){
@@ -1532,6 +1687,11 @@
         $sel.val('LAINNYA').trigger('change');
         $('#edit-tipehp-custom').val(t);
       }
+      
+      // Fokus ke field pertama
+      setTimeout(() => {
+        $('#edit-tanggal').focus();
+      }, 300);
     }
     
     async function exportToExcel(){
@@ -2000,6 +2160,7 @@
     $(document).ready(function(){
       // Inisialisasi Datepicker
       $(".tanggal-input").datepicker({ dateFormat: "dd/mm/yy", changeMonth: true, changeYear: true, yearRange: "2020:2035" });
+      
       // Event listener untuk navigasi tab
       $('.tab-btn').on('click', async function() {
         const tabId = $(this).data('tab');
@@ -2017,10 +2178,21 @@
           renderCompareTable();
         }
       });
+      
       // Event listener form input data
       $('#input-form').on('submit', e => { e.preventDefault(); submitForm(); });
       $('#edit-form').on('submit', e => { e.preventDefault(); updateData(); });
+      
+      // Event listener untuk menutup modal
       $('#close-modal-btn').on('click', () => $('#edit-modal').removeClass('show'));
+      
+      // Event listener untuk menutup modal saat klik di luar modal
+      $('#edit-modal').on('click', function(e) {
+        if ($(e.target).closest('.modal-content').length === 0) {
+          $('#edit-modal').removeClass('show');
+        }
+      });
+      
       // Event listener tab Data
       $('#refresh-btn').on('click', loadData);
       $('#export-excel-btn').on('click', exportToExcel);
@@ -2030,12 +2202,14 @@
       $('#filter-tanggal-awal, #filter-tanggal-akhir').on('change', filterData);
       $('#sort-tanggal').on('change', function(){ sortColumn='tanggal'; sortDirection=$(this).val(); updateSortIndicators(); sortData(); renderTable(); });
       $('#data-table thead').on('click', 'th.sortable', thSortHandler);
+      
       // Cek angsuran saat NPK diinput
       $('#npk').on('input blur', function(){ checkAngsuranOnInput($(this).val().trim()); });
       $('#angsuran-ack-input').on('change', function(){
         const needAck = !$('#angsuran-warning-input').hasClass('hidden');
         toggleSubmitDisabled(!( $(this).is(':checked') || !needAck ));
       });
+      
       // Event listener tab Vendor
       $('#vendor-refresh-btn').on('click', function(){ loadPriceDB(); });
       $('#vendor-export-excel-btn').on('click', exportVendorToExcel);
@@ -2057,6 +2231,7 @@
         vendorFiltered = [...vendorData];
         renderVendorTable();
       });
+      
       // Event listener tab Pembanding Vendor
       $('#compare-tanggal-awal, #compare-tanggal-akhir').on('change', renderCompareTable);
       $('#compare-clear-filter').on('click', function(){
@@ -2066,6 +2241,7 @@
       $('#compare-export-excel-btn').on('click', exportCompareToExcel);
       $('#compare-export-pdf-btn').on('click', exportCompareToPDF);
       $('#compare-export-jpeg-btn').on('click', exportCompareToJPEG);
+      
       // 1) Muat opsi tipe dinamis dari price DB
       loadPriceDB();
       // 2) Muat data HP
@@ -2082,6 +2258,9 @@
       $('#close-notification').on('click', function() {
         $('#notification').removeClass('show');
       });
+      
+      // Event listener untuk refresh all data
+      $('#refresh-all-btn').on('click', refreshAllData);
     });
   </script>
 </body>
